@@ -75,7 +75,7 @@ def main(argv):
 	epochs = 100
 	batch_size = 128
 	model_folder = 'Models/'
-	model_name = 'model_' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '.h5'
+	model_name = 'mlp_model_' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '.h5'
 
 	model = setupModel()
 	history_log = trainModel(traces, labels, model, model_folder,model_name, batch_size, epochs)
