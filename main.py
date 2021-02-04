@@ -37,14 +37,14 @@ def trainModel(inputData, labels, model, save_model_path, save_model_name,batch_
 	if input_layer_shape[1] != len(inputData[0]):
 		print("Error: model input shape %d instead of %d is not expected ..." % (input_layer_shape[1], len(inputData[0])))
 		sys.exit(-1)
-	
+
 	if len(input_layer_shape) == 2:
 		print('Ok!')
 	else:
 		print('Error: model imput shape length %d is not expected...' % len(input_layer_shape))
 		sys.exit(-1)
 
-	
+
 	history = model.fit(x=inputData, y=tf.keras.utils.to_categorical(labels, num_classes=256), batch_size=batch_size, verbose=1, epochs=epochs, callbacks=callbacks, validation_split=0.1)
 
 	return history
@@ -62,19 +62,19 @@ def main(argv):
 			sys.exit()
 		elif opt in ("-i", "--ifile"):
 			dataPath = arg
-	    
+
 	NUMBER = 500000
-	
-	rawTraces, rawLabels = loadData(dataPath, 'nor_traces_maxmin.npy', 'label_0.npy') 
+
+	rawTraces, rawLabels = loadData(dataPath, 'nor_traces_maxmin.npy', 'label_0.npy')
 
 	rawTraces = rawTraces[:NUMBER]
-	traces = rawTraces[:,[147,148,149,150,151]] 
+	traces = rawTraces[:,[147,148,149,150,151]]
 
 	labels = rawLabels[:NUMBER]
 
 	epochs = 100
 	batch_size = 128
-	model_folder = 'Models/'
+	model_folder = 'models/'
 	model_name = 'mlp_model_' + datetime.now().strftime("%Y-%m-%d_%H%M%S") + '.h5'
 
 	model = setupModel()
@@ -90,4 +90,3 @@ def main(argv):
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
-
