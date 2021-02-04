@@ -85,8 +85,8 @@ def main(argv):
 	acc = np.array(history_log.history['val_accuracy'])
 	loss = np.array(history_log.history['val_loss'])
 
-	np.save(model_folder + 'Acc.npy', acc)
-	np.save(model_folder + 'Loss.npy', loss)
+	np.save(model_folder + 'Acc_' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '.npy', acc)
+	np.save(model_folder + 'Loss_.'  + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + 'npy', loss)
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
