@@ -15,10 +15,10 @@ def soundNoise(filename):
 def whiteNoise(length, mean = 0, std = 1):
 	return np.random.normal(mean, std, size=length)
 
-def insertTrace(trace, testTrace, offset):
+def insertTrace(trace, bigTrace, offset):
 	for i in range(len(trace)):
-		testTrace[i+offset] = trace[i]+testTrace[i+offset]
-	return testTrace
+		bigTrace[i+offset] = trace[i]+bigTrace[i+offset]
+	return bigTrace
 
 def insertTraceAverage(trace, testTrace, offset):
 	for i in range(len(trace)):
@@ -34,11 +34,14 @@ def main():
 	sNoise = soundNoise('../data/baloobas.wav')
 	wNoise = whiteNoise(len(sNoise))
 	testTrace = addSamples(wNoise, sNoise)
-	testTrace_scaled = normMaxMin(testTrace)
+	#testTrace_scaled = normMaxMin(testTrace)
 
 	trace = np.load('../data/ff-em-sca-data/for_testing/3m/10k_d6/1avg/nor_traces_maxmin.npy')[0]
+	trace2 = np.load('../data/ff-em-sca-data/for_testing/3m/10k_d6/1avg/nor_traces_maxmin.npy')[100]
 
 	final = insertTrace(trace, testTrace, 100000)
+	final = insertTrace(trace2, final, 350000)
+
 	finalmaxmin = normMaxMin(final)
 	np.save('test_trace.npy', finalmaxmin)
 	plt.plot(finalmaxmin[99000:101000])

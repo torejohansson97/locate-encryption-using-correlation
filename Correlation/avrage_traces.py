@@ -31,7 +31,7 @@ def main():
 	print(np.amax(corr))
 	print(np.argmax(corr))
 
-	plt.plot(range(0, len(test_trace)), test_trace, range(np.argmax(corr)-400, np.argmax(corr)), avg)
+	plt.plot(range(0, len(test_trace)), test_trace, range(np.argmax(corr)-400, np.argmax(corr)), avg, range(400, len(test_trace)), corr[400:len(test_trace)]-73)
 	plt.show()
 	#plt.plot(range(0, 400), avg)
 	#plt.show()
