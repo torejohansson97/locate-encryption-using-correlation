@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 # User
-ff-em-sca-data/
+data/
