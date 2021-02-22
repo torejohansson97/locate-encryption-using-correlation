@@ -25,10 +25,14 @@ def combine():
 def main():
 	avg = combine()
 	test_trace = np.load('./test_trace.npy')
+
+	print('Correlating...')
 	corr = signal.correlate(test_trace, avg, mode='full', method='auto')
 	print(np.amax(corr))
 	print(np.argmax(corr))
 
+	plt.plot(range(0, len(test_trace)), test_trace, range(np.argmax(corr)-400, np.argmax(corr)), avg)
+	plt.show()
 	#plt.plot(range(0, 400), avg)
 	#plt.show()
 
