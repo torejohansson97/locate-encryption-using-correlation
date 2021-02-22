@@ -3,7 +3,7 @@ from scipy import signal
 import matplotlib.pyplot as plt
 import os
 
-ROOTDIR = '../ff-em-sca-data'
+ROOTDIR = '../data/ff-em-sca-data'
 
 def combine():
 	avg = np.empty((0,400), float) #creating empty array
