@@ -54,11 +54,11 @@ def main(argv):
 	try:
 		opts, args = getopt.getopt(argv,"hi:",["ifile="])
 	except getopt.GetoptError:
-		print('test.py -i <dataPath>')
+		print('main.py -i <dataPath>')
 		sys.exit(2)
 	for opt, arg in opts:
 		if opt == '-h':
-			print('test.py -i <dataPath>')
+			print('main.py -i <dataPath>')
 			sys.exit()
 		elif opt in ("-i", "--ifile"):
 			dataPath = arg
