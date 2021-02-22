@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import signal
 import matplotlib.pyplot as plt
 import os
 
@@ -6,6 +7,7 @@ ROOTDIR = '../ff-em-sca-data'
 
 def combine():
 	avg = np.empty((0,400), float) #creating empty array
+	plot('Loading files...')
 	for subdir, dirs, files in os.walk(ROOTDIR):
 		for file in files:
 			if file == 'nor_traces_maxmin.npy':
@@ -20,14 +22,15 @@ def combine():
 	#print(avg)
 	return np.mean(avg, axis=0)	# Average end trace
 
-def correlate():
-	pass
-
 def main():
 	avg = combine()
+	test_trace = np.load('./test_trace.npy')
+	corr = signal.correlate(test_trace, avg, mode='full', method='auto')
+	print(np.amax(corr))
+	print(np.argmax(corr))
 
-	plt.plot(range(0, 400), avg)
-	plt.show()
+	#plt.plot(range(0, 400), avg)
+	#plt.show()
 
 if __name__ == "__main__":
 	main()
