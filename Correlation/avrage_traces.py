@@ -7,7 +7,7 @@ ROOTDIR = '../data/ff-em-sca-data'
 
 def combine():
 	avg = np.empty((0,400), float) #creating empty array
-	plot('Loading files...')
+	print('Loading files...')
 	for subdir, dirs, files in os.walk(ROOTDIR):
 		for file in files:
 			if file == 'nor_traces_maxmin.npy':
