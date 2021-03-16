@@ -7,38 +7,30 @@ import serial
 from capture import *
 
 def main():
-    outputfile=''
-    radioaddr=''
-    targetdev=''
-    # repetiotion
-    # plain text
-    # key
-    # parseArguments()
+    outputfile='out'
+    targetDevice = '/dev/ttyACM0'
+    repetiotion = 2000
+    key = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    text = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
-    recorder = capture()
+    recorder = capture(outfile=outputfile)
     
-    dev = serial.Serial('/dev/ttyACM0', baudrate=115200, timeout=1)
-    writeToSerial(dev, 'a')
-    writeToSerial(dev, '0')
-    writeToSerial(dev, 'p')
-    writeToSerial(dev, '1')
-    #writeToSerial(dev, 's')
-    writeToSerial(dev, 'c')
-    writeToSerial(dev, 'n')
+    dev = serial.Serial(targetDevice, baudrate=115200, timeout=1)
+    setChannel(dev)
+    setPower(dev)
+    startCarrier(dev)
+
+    writeToSerial(dev, 'n') # Enter tinyAES
     
-    writeToSerial(dev, 'n')
-    writeToSerial(dev, '2000 ')
-    writeToSerial(dev, 'k')
-    writeToSerial(dev, '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ')
-    writeToSerial(dev, 'p')
-    writeToSerial(dev, '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ')
-    #writeToSerial(dev, '16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 ')
+    setRepetition(dev)
+    setKey(dev, key)
+    setPlainText(dev, text)
     
     recorder.start()
 
-    writeToSerial(dev, 'r')
-    writeToSerial(dev, 'q')
-    writeToSerial(dev, 'e')
+    writeToSerial(dev, 'r') # Run encryption
+    writeToSerial(dev, 'q') # Quit tinyAES
+    stopCarrier(dev)
 
     # Clean up and exit
     recorder.stop()
@@ -49,23 +41,33 @@ def writeToSerial(device, data):
     device.write(data.encode())
     print(device.readline().decode().strip())
 
-def parseArguments():
-    try:
-      opts, args = getopt.getopt(argv,"ho:r",["ofile=", "raddr="])
-    except getopt.GetoptError:
-        print('test.py -o <outputfile>')
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt == '-h':
-            print('test.py -o <outputfile>')
-            sys.exit()
-        elif opt in ("-o", "--ofile"):
-            outputfile = arg
+def setChannel(device, channel='0'):
+    writeToSerial(device, 'a')
+    writeToSerial(device, channel)
+
+def setPower(device, power='0'):
+    writeToSerial(device, 'p')
+    writeToSerial(device, power)
+
+def startCarrier(device):
+    writeToSerial(device, 'c')
+
+def stopCarrier(device):
+    writeToSerial(device, 'e')
+
+def setRepetition(device, repetiotion='2000'):
+    writeToSerial(device, 'n')
+    writeToSerial(device, repetiotion)
+
+def setKey(device, key):
+    # Assumes i tinyAES mode
+    writeToSerial(device, 'k')
+    writeToSerial(device, " ".join(str(char) for char in key))
+
+def setPlainText(device, text):
+    # Assumes i tinyAES mode
+    writeToSerial(device, 'p')
+    writeToSerial(device, " ".join(str(char) for char in text))
 
 if __name__ == "__main__":
    main()
-
-# Navigera till tinyAES, gör inställningar
-# Starta en capture
-# Starta kryptering, vänta på 'done'
-# Avsluta
