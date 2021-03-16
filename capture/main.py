@@ -3,33 +3,35 @@
 
 import sys, getopt
 import serial
+import time
 
 from capture import *
 
 def main():
     outputfile='out'
     targetDevice = '/dev/ttyACM0'
-    repetiotion = 2000
-    key = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    text = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    repetiotion = 100
+    key = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,23,0]
+    text = [0,0,0,0,0,0,0,0,0,25,0,0,0,0,0,0]
 
     recorder = capture(outfile=outputfile)
     
-    dev = serial.Serial(targetDevice, baudrate=115200, timeout=1)
+    dev = serial.Serial(targetDevice, baudrate=115200, timeout=20)
+
     setChannel(dev)
     setPower(dev)
     startCarrier(dev)
 
-    writeToSerial(dev, 'n') # Enter tinyAES
-    
-    setRepetition(dev)
+    enterTinyAES(dev)
+    setRepetition(dev, repetiotion)
     setKey(dev, key)
     setPlainText(dev, text)
     
     recorder.start()
 
-    writeToSerial(dev, 'r') # Run encryption
-    writeToSerial(dev, 'q') # Quit tinyAES
+    runEncryption(dev)
+    
+    exitTinyAES(dev)    
     stopCarrier(dev)
 
     # Clean up and exit
@@ -37,37 +39,51 @@ def main():
     recorder.wait()
     dev.close()
 
-def writeToSerial(device, data):
-    device.write(data.encode())
-    print(device.readline().decode().strip())
+def enterTinyAES(device):
+    device.write(b'n') # Enter tinyAES
+    print(device.readline())
+
+def exitTinyAES(device):
+    device.write(b'q') # Quit tinyAES
+    print(device.readline())
 
 def setChannel(device, channel='0'):
-    writeToSerial(device, 'a')
-    writeToSerial(device, channel)
+    device.write(b'a')
+    print(device.readline())
+    device.write(b'0\r\n')
+    print(device.readline())
 
 def setPower(device, power='0'):
-    writeToSerial(device, 'p')
-    writeToSerial(device, power)
+    device.write(b'p0')
+    print(device.readline())
+    print(device.readline())
 
 def startCarrier(device):
-    writeToSerial(device, 'c')
+    device.write(b'c')
 
 def stopCarrier(device):
-    writeToSerial(device, 'e')
+    device.write(b'e')
 
-def setRepetition(device, repetiotion='2000'):
-    writeToSerial(device, 'n')
-    writeToSerial(device, repetiotion)
-
+def setRepetition(device, repetiotion=2000):
+    device.write(b'n2000\r\n')
+    print(device.readline())    
+    
 def setKey(device, key):
     # Assumes i tinyAES mode
-    writeToSerial(device, 'k')
-    writeToSerial(device, " ".join(str(char) for char in key))
+    command_line = '%s%s\r\n' % ('k', " ".join(str(char) for char in key))
+    device.write(command_line.encode())
+    print(device.readline())
 
 def setPlainText(device, text):
     # Assumes i tinyAES mode
-    writeToSerial(device, 'p')
-    writeToSerial(device, " ".join(str(char) for char in text))
+    command_line = '%s%s\r\n' % ('p', " ".join(str(char) for char in text))
+    device.write(command_line.encode())
+    print(device.readline())
+    
+def runEncryption(device):
+    print("Encrypting...")
+    device.write(b'r')
+    print(device.readline())
 
 if __name__ == "__main__":
    main()
