@@ -82,7 +82,7 @@ blocks:
     alias: ''
     append: 'False'
     comment: ''
-    file: capture
+    file: file_name
     type: float
     unbuffered: 'False'
     vlen: '1'

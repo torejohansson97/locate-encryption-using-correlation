@@ -92,7 +92,7 @@ class capture(gr.top_block, Qt.QWidget):
         self.uhd_usrp_source_0.set_samp_rate(samp_rate)
         # No synchronization enforced.
         self.dc_blocker_xx_0 = filter.dc_blocker_ff(32, True)
-        self.blocks_file_sink_0 = blocks.file_sink(gr.sizeof_float*1, 'capture', False)
+        self.blocks_file_sink_0 = blocks.file_sink(gr.sizeof_float*1, 'file_name', False)
         self.blocks_file_sink_0.set_unbuffered(False)
         self.analog_am_demod_cf_0 = analog.am_demod_cf(
         	channel_rate=samp_rate,
@@ -145,7 +145,7 @@ def main(top_block_cls=capture, options=None):
 
     tb.start()
 
-    tb.show()
+   # tb.show()
 
     def sig_handler(sig=None, frame=None):
         Qt.QApplication.quit()
