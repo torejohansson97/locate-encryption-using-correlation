@@ -17,19 +17,38 @@ def main():
 
     recorder = capture()
     
-    # dev = serial.Serial(targetdev)
-   # dev.write('a0p1cnn' + '2000')
-
+    dev = serial.Serial('/dev/ttyACM0', baudrate=115200, timeout=1)
+    writeToSerial(dev, 'a')
+    writeToSerial(dev, '0')
+    writeToSerial(dev, 'p')
+    writeToSerial(dev, '1')
+    #writeToSerial(dev, 's')
+    writeToSerial(dev, 'c')
+    writeToSerial(dev, 'n')
+    
+    writeToSerial(dev, 'n')
+    writeToSerial(dev, '2000 ')
+    writeToSerial(dev, 'k')
+    writeToSerial(dev, '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ')
+    writeToSerial(dev, 'p')
+    writeToSerial(dev, '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ')
+    #writeToSerial(dev, '16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 ')
+    
     recorder.start()
 
-    #dev.write() # Start encryption
-    #dev.read_until(terminator='done\r\n') # 'done'?
-    
+    writeToSerial(dev, 'r')
+    writeToSerial(dev, 'q')
+    writeToSerial(dev, 'e')
+
     # Clean up and exit
     recorder.stop()
     recorder.wait()
     dev.close()
-    
+
+def writeToSerial(device, data):
+    device.write(data.encode())
+    print(device.readline().decode().strip())
+
 def parseArguments():
     try:
       opts, args = getopt.getopt(argv,"ho:r",["ofile=", "raddr="])
