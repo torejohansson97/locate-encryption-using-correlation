@@ -7,6 +7,9 @@ ROOTDIR = '../data/ff-em-sca-data'
 
 TEMPLATE_LENGTH = 4100
 
+def average(traces):
+	return np.mean(traces, axis=0)	# all the traces to one
+
 def combine():
 	avg = np.empty((0,400), float) #creating empty array
 	print('Loading files...')
@@ -53,6 +56,15 @@ def binDistribution(inputArray, bins, minLimit=None, maxLimit=None):
 		x += min
 		xAxis.append(x)
 	return (xAxis, binList)
+"""
+def filterArray(array, distanceBetweenPeeks=4300, highPassCutoff=0.01,lowPassCutoff=0.1):
+	ny = 0.5*distanceBetweenPeeks
+    low = lowPassCutoff/ny
+    high = highcut/ny
+    b, a = signal.butter(5, [low, high], btype='band')
+	y = signal.lfilter(b, a)
+	return signal.filtfilt(b, a, array)
+"""
 
 def getTriggerLevel(amplitudes, quantities, ampDiff = 0.2):
 	# Returns trigger level based on correlation amplitudes distributed into bins
@@ -98,9 +110,22 @@ def makeTraces(corr, traceArray, trigger, offset = 3328):
 			indexes.append(startIndex)
 	return traces, indexes
 
-
+def getTracesFromArray(array, template, plotCorr=False):
+	templ_length = len(template)
+	print('Correlating...')
+	corr = signal.correlate(array, template, mode='full', method='auto')
+	corr = normMaxMin(corr[templ_length:len(array)])
+	print('Distributing to bins...')
+	corrAmplitudes, quantities = binDistribution(corr, 100)
+	if(plotCorr):
+		plt.figure(0)
+		plt.plot(range(len(array)), array, range(templ_length, len(array)), corr)
+	#plt.plot(corrAmplitudes, quantities)
+	traces, indexes = makeTraces(corr, array, getTriggerLevel(corrAmplitudes, quantities, 0.15))
+	return traces, indexes
 
 def main():
+	i=1
 	templ_length = TEMPLATE_LENGTH
 
 	#avg = averageOfOne(normMaxMin(np.fromfile('../data/outfile', dtype='float32')[2000000:3000000]), 406650)
@@ -109,25 +134,40 @@ def main():
 	#avg = combine()
 	#np.save('avg_combined.npy', avg)
 
+
+
+	avg = np.load('../data/ff-em-sca-data/for_training/cable/100k_d1/100avg/nor_traces_maxmin.npy')
+	plt.figure(i)
+	i+=1
+	plt.plot(range(avg.shape[1]), avg[0])
 	#avg = np.load('./avg_combined.npy')
 	avg = np.load('./avg_of_one.npy')
 
 
 	#test_trace = np.load('./test_trace.npy')
 	#test_trace = normMaxMin(np.fromfile('../data/outfile', dtype='float32')[2000000:3000000])
-	test_trace = normMaxMin(np.fromfile('../data/outfile', dtype='float32'))
+	#test_trace = normMaxMin(np.fromfile('../data/outfile', dtype='float32'))
+	test_trace = np.load('../data/test2/k2/traces.npy')
 
-	print('Correlating...')
-	corr = signal.correlate(test_trace, avg, mode='full', method='auto')
-	corr = normMaxMin(corr[templ_length:len(test_trace)])
-	print('Distributing to bins...')
-	corrAmplitudes, quantities = binDistribution(corr, 100)
-	plt.figure(0)
-	plt.plot(corrAmplitudes, quantities)
 
-	traces, indexes = makeTraces(corr, test_trace, getTriggerLevel(corrAmplitudes, quantities, 0.1))
-	print("Number of traces found: " + str(len(traces)))
-	i = 1
+	"""
+	Kod för att hitta traces ur array
+	"""
+	foundTraces = []
+	avg_traces = np.empty((len(test_trace),400), dtype='float32')
+	for j in range(len(test_trace)-9):
+		traces, indexes = getTracesFromArray(normMaxMin(test_trace[j,200000:]), avg, (j==-1))
+		foundTraces.append(len(traces))
+		avg_traces[j] = average(traces)
+	print("Number of traces found: " + str(foundTraces))
+	plt.figure(i)
+	i+=1
+	plt.plot(range(traces.shape[1]), traces[10])
+	plt.figure(i)
+	i+=1
+	plt.plot(range(avg_traces.shape[1]), avg_traces[0])
+
+
 	"""
 	while i < len(traces):
 		plt.figure(i)
@@ -135,13 +175,9 @@ def main():
 		i += 1
 	"""
 
-
 	#print(np.amax(corr))
 	#print(np.argmax(corr))
-
-	plt.figure(i)
-	plt.plot(range(len(indexes)), indexes)
-	i+=1
+	"""
 	indexDiffs = np.array([], dtype='int')
 	lastIndex = 0
 	for index in indexes:
@@ -152,6 +188,7 @@ def main():
 	indexDiffBins, quantities = binDistribution(indexDiffs, 8700, 0, 8700)
 	plt.figure(i)
 	plt.plot(indexDiffBins, quantities)
+	"""
 	#plt.plot(range(0, len(test_trace)), test_trace, range(np.argmax(corr)-templ_length, np.argmax(corr)), avg, range(templ_length, len(test_trace)), corr)
 	plt.show()
 	#plt.plot(range(0, 400), avg)
