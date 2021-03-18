@@ -53,7 +53,7 @@ class capture(gr.top_block):
         self.uhd_usrp_source_0.set_samp_rate(samp_rate)
         # No synchronization enforced.
         self.dc_blocker_xx_0 = filter.dc_blocker_ff(32, True)
-        self.blocks_file_sink_0 = blocks.file_sink(gr.sizeof_float*1, '../data/' + outfile, False)
+        self.blocks_file_sink_0 = blocks.file_sink(gr.sizeof_float*1, outfile, False)
         self.blocks_file_sink_0.set_unbuffered(False)
         self.analog_am_demod_cf_0 = analog.am_demod_cf(
         	channel_rate=samp_rate,
