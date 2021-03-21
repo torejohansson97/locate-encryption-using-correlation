@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def main():
-    i=1
+    i=2
     templ_length = tct.TEMPLATE_LENGTH
 
     createTemplateFile()
