@@ -70,7 +70,9 @@ def getTriggerLevel(amplitudes, quantities, ampDiff = 0.2):
 	for j in range(nrBins):
 		i = j + 1
 		if quantities[nrBins-i] > maxCorrPeakQuantity:
-			return amplitudes[nrBins - i + margin]
+			level = amplitudes[nrBins - i + margin]
+			print('Level: ' + str(level))
+			return level
 	return max
 
 def makeTraces(corr, traceArray, trigger, offset):
