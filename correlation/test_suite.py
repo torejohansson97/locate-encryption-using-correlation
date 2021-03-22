@@ -23,10 +23,14 @@ def main():
     """
     foundTraces = []
     avg_traces = np.empty((len(test_trace),400), dtype='float32')
+
+    triggerLevel = tct.getTriggerLevel(test_trace[1], template, True) # Calculate trigger level once
     for j in range(len(test_trace)):
-    	traces, indexes = tct.getTracesFromArray(tct.normMaxMin(test_trace[j,200000:]), template, (j==7))
-    	foundTraces.append(len(traces))
-    	avg_traces[j] = tct.average(traces)
+        print("Sign of traces: " + str(tct.signOfTraces(test_trace[j], template)))
+        #triggerLevel = tct.getTriggerLevel(test_trace[j], template, (j==7))
+        traces, indexes = tct.getTracesFromArray(tct.normMaxMin(test_trace[j,200000:]), template, triggerLevel, (j==7))
+        foundTraces.append(len(traces))
+        avg_traces[j] = tct.average(traces)
     print("Number of traces found: " + str(foundTraces))
     #plt.figure(i)
     #i+=1
