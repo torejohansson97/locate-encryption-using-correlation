@@ -79,22 +79,26 @@ def makeTraces(corr, traceArray, trigger, offset):
 	print("Splitting array into traces...")
 	traces = np.empty((0,400), float) #creating empty array
 	indexes = []
-	minDistance = 10
+	minDistance = 3
 	lastTraceIndex = -10
-	for i in range(len(corr)):
+	i = 0
+	while i < len(corr):
 		value = corr[i]
 		if value > trigger and i - lastTraceIndex >= minDistance:
 			startIndex = i - offset
+			tempIndex = startIndex
 			for j in range(1, minDistance):
 				if corr[i+j] > value:
 					value = corr[i+j]
-					startIndex += j
-					break
-			temp = traceArray[startIndex:startIndex+400]
+					tempIndex = startIndex + j
+			temp = traceArray[tempIndex:tempIndex+400]
 			temp = np.reshape(temp, (1,400))
 			traces = np.append(traces, temp, axis=0)
-			lastTraceIndex = startIndex + offset
-			indexes.append(startIndex)
+			lastTraceIndex = tempIndex + offset
+			indexes.append(lastTraceIndex)
+			i+=4000 # Skip samples of saved trace
+		else:
+			i+=1
 	return traces, indexes
 
 def getTracesFromArray(array, template, plotCorr=False):
