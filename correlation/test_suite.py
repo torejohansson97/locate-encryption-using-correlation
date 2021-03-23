@@ -2,6 +2,18 @@ import correlation_tools as tct
 import matplotlib.pyplot as plt
 import numpy as np
 
+def filterTest():
+    createTemplateFile()
+    template, test_trace = loadData()
+    corr = tct.normMaxMin(tct.getCorrelation(test_trace[0], template)[10000:])
+    #filteredCorr = tct.filterArray(corr)
+    filteredCorr = tct.getCorrEnvelope(corr)
+    filteredCorr = tct.normMaxMin(filteredCorr)
+    plt.figure(3)
+    plt.plot(filteredCorr)
+    #plt.plot(corr)
+    plt.show()
+
 def main():
     i=2
     templ_length = tct.TEMPLATE_LENGTH
@@ -117,4 +129,8 @@ def combine():
 	return np.mean(avg, axis=0)	# Average end trace
 
 if __name__ == "__main__":
-	main()
+    input = input('Vilket test vill du göra, main (m) eller filter (f)?')[0]
+    if input == 'f':
+        filterTest()
+    elif input == 'm':
+        main()

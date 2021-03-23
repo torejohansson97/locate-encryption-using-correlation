@@ -3,7 +3,7 @@ Module with useful functions for trace identification using correlation.
 Test code is in test_suite.py!
 """
 import numpy as np
-from scipy import signal
+from scipy import signal, fftpack
 import os
 import matplotlib.pyplot as plt
 
@@ -43,15 +43,49 @@ def binDistribution(inputArray, bins, minLimit=None, maxLimit=None):
 		x = x * binSize
 		xAxis.append(x+min)
 	return (xAxis, binList)
-"""
-def filterArray(array, distanceBetweenPeeks=4300, highPassCutoff=0.01,lowPassCutoff=0.1):
-	ny = 0.5*distanceBetweenPeeks
-    low = lowPassCutoff/ny
-    high = highcut/ny
-    b, a = signal.butter(5, [low, high], btype='band')
-	y = signal.lfilter(b, a)
-	return signal.filtfilt(b, a, array)
-"""
+
+def plotFrequencies(array):
+	N = len(array) # Number of samples
+	f_s = 5000000 # Sample frequency of Software defined radio
+	yf = fftpack.fft(array)
+	xf = fftpack.fftfreq(N) * f_s
+	fig, ax = plt.subplots()
+	ax.plot(xf, np.abs(yf))
+
+def getCorrEnvelope(corr, segmentLength=400):
+	envelope = np.empty(corr.shape)
+	startIndex = 0
+	stop = segmentLength
+	length = len(corr)
+	while startIndex < length and stop == segmentLength:
+		if startIndex + segmentLength > length:
+			biggest = np.max(corr[startIndex:len(corr)])
+			stop = length - 1 - startIndex
+		else:
+			biggest = np.max(corr[startIndex:startIndex+segmentLength])
+		envelope[startIndex:startIndex+stop]=np.linspace(envelope[startIndex-1],biggest, num=stop)
+		startIndex+=segmentLength
+	return envelope
+
+def _butterBandpassFilter(array, lowcut, highcut, f_s, order=5):
+    nyq = 0.5 * f_s
+    low = lowcut / nyq
+    high = highcut / nyq
+    sos = signal.butter(order, [low, high], analog=False, btype='band', output='sos')
+    y = signal.sosfilt(sos, array)
+    return y
+
+def filterArray(array, distanceBetweenPeeks=4370):
+	#plotFrequencies(array)
+	f_s = 5000000
+	t_s = 1/f_s
+	f_enc = 1 / (distanceBetweenPeeks*t_s)
+	low = f_enc * 0.1
+	high = f_enc * 10
+	y = _butterBandpassFilter(array, low, high, f_s, 10)
+	#plotFrequencies(y)
+	return y
+
 def signOfTraces(trace, template, corr = None):
 	try:
 		if corr == None:
