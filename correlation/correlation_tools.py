@@ -9,6 +9,12 @@ import matplotlib.pyplot as plt
 
 TEMPLATE_LENGTH = 4100
 
+def getTracesFromArray(traceArray, template):
+	corr = getCorrelation(traceArray, template, False)
+	corrEnvelopeList = getCorrEnvelopeList(corr)
+	indices = getTraceIndicesFromEnvelope(corr, corrEnvelopeList, 800)
+	return cutTracesWithIndices(traceArray, indices)
+
 def average(traces):
 	return np.mean(traces, axis=0)	# all the traces to one
 
@@ -20,6 +26,83 @@ def normMaxMin(inputArray):
 	min = np.min(inputArray)
 	return np.array([(x - min) / (max - min) for x in inputArray])
 
+def getTraceIndicesFromEnvelope(corr, envelopeList, offset):
+	print('Getting indexes of correlations peaks...')
+	meanCorr = np.mean(corr)
+	std = np.std(corr)
+	indices = []
+	amps = envelopeList[0]
+	for i in range(1,len(amps)-1):
+		if amps[i] > meanCorr + (std*5) and amps[i] > amps[i-1] and amps[i] > amps[i+1]: # Check if amp is bigger than half the max value and a local maxima
+			indices.append(envelopeList[1][i]+offset)
+	return indices
+
+def getCorrEnvelopeList(corr, segmentLength=400):
+	print('Saving max amplitudes in segments and their indices to envelope list... (Segment length: ' +str(segmentLength)+')')
+	envelope = [[],[]]
+	startIndex = 0
+	stop = segmentLength
+	length = len(corr)
+	while startIndex < length and stop == segmentLength:
+		if startIndex + segmentLength > length:
+			index = startIndex + np.argmax(corr[startIndex:len(corr)])
+			biggest = corr[index]
+			stop = length - 1 - startIndex
+		else:
+			index = startIndex + np.argmax(corr[startIndex:startIndex+segmentLength])
+			biggest = corr[index]
+		envelope[0].append(biggest)
+		envelope[1].append(index)
+		startIndex+=segmentLength
+	return envelope
+
+def getCorrEnvelope(corr, segmentLength=400):
+	envelope = np.empty((2,corr.shape[0]))
+	startIndex = 0
+	stop = segmentLength
+	length = len(corr)
+	while startIndex < length and stop == segmentLength:
+		if startIndex + segmentLength > length:
+			index = startIndex + np.argmax(corr[startIndex:len(corr)])
+			biggest = corr[index]
+			stop = length - 1 - startIndex
+		else:
+			index = startIndex + np.argmax(corr[startIndex:startIndex+segmentLength])
+			biggest = corr[index]
+		#envelope[startIndex:startIndex+stop]=np.linspace(envelope[startIndex-1],biggest, num=stop)
+		envelope[0][startIndex:startIndex+stop]=np.array(([biggest]*stop))
+		envelope[1][startIndex:startIndex+stop]=np.array(([index]*stop))
+		startIndex+=segmentLength
+	return envelope
+
+def cutTracesWithIndices(traceArray, indices):
+	print('Splitting array into traces...')
+	traces = np.empty((0,400))
+	for i in indices:
+		temp = traceArray[i:i+400]
+		temp = np.reshape(temp, (1,400))
+		traces = np.append(traces, temp, axis=0)
+	return traces
+
+def signOfTraces(trace, template, corr = None):
+	try:
+		if corr == None:
+			corr = getCorrelation(trace, template)
+	except ValueError:
+		pass
+	return np.mean(corr) < 0.49
+
+def getCorrelation(trace, template, norm=True):
+	#print(len(trace), len(template))
+	corr = signal.correlate(trace, template, mode='full', method='auto')
+	corr = corr[len(template):len(trace)]
+	if norm:
+		corr = normMaxMin(corr)
+	return corr
+
+
+""" Old code: """
+"""
 def binDistribution(inputArray, bins, minLimit=None, maxLimit=None):
 	if maxLimit != None:
 		max = maxLimit
@@ -52,21 +135,6 @@ def plotFrequencies(array):
 	fig, ax = plt.subplots()
 	ax.plot(xf, np.abs(yf))
 
-def getCorrEnvelope(corr, segmentLength=400):
-	envelope = np.empty(corr.shape)
-	startIndex = 0
-	stop = segmentLength
-	length = len(corr)
-	while startIndex < length and stop == segmentLength:
-		if startIndex + segmentLength > length:
-			biggest = np.max(corr[startIndex:len(corr)])
-			stop = length - 1 - startIndex
-		else:
-			biggest = np.max(corr[startIndex:startIndex+segmentLength])
-		envelope[startIndex:startIndex+stop]=np.linspace(envelope[startIndex-1],biggest, num=stop)
-		startIndex+=segmentLength
-	return envelope
-
 def _butterBandpassFilter(array, lowcut, highcut, f_s, order=5):
     nyq = 0.5 * f_s
     low = lowcut / nyq
@@ -85,16 +153,6 @@ def filterArray(array, distanceBetweenPeeks=4370):
 	y = _butterBandpassFilter(array, low, high, f_s, 10)
 	#plotFrequencies(y)
 	return y
-
-def signOfTraces(trace, template, corr = None):
-	try:
-		if corr == None:
-			corr = getCorrelation(trace, template)
-	except ValueError:
-		pass
-	return np.mean(corr) < 0.49
-
-
 
 def getTriggerLevel(trace, template, plotBins=False):
 	# Returns trigger level based on correlation amplitudes distributed into bins
@@ -119,11 +177,6 @@ def getTriggerLevel(trace, template, plotBins=False):
 			return level
 	return max
 
-def getCorrelation(trace, template):
-	#print(len(trace), len(template))
-	corr = signal.correlate(trace, template, mode='full', method='auto')
-	corr = normMaxMin(corr[len(template):len(trace)])
-	return corr
 
 def makeTraces(corr, traceArray, triggerLevel, offset):
 	print("Splitting array into traces...")
@@ -161,3 +214,4 @@ def getTracesFromArray(array, template, triggerLevel, plotCorr=False):
 		plt.plot(range(len(array)), array, range(templ_length, len(array)), corr)
 	traces, indexes = makeTraces(corr, array, triggerLevel, 3548)
 	return traces, indexes
+"""

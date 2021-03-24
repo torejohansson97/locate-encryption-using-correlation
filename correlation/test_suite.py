@@ -5,13 +5,22 @@ import numpy as np
 def filterTest():
     createTemplateFile()
     template, test_trace = loadData()
-    corr = tct.normMaxMin(tct.getCorrelation(test_trace[0], template)[10000:])
-    #filteredCorr = tct.filterArray(corr)
-    filteredCorr = tct.getCorrEnvelope(corr)
-    filteredCorr = tct.normMaxMin(filteredCorr)
-    plt.figure(3)
-    plt.plot(filteredCorr)
-    #plt.plot(corr)
+
+    foundTraces = []
+    avg_traces = np.empty((len(test_trace),400))
+    arrayCut = 200000
+
+    for i in range(len(test_trace)):
+        traceArray = test_trace[i,arrayCut:]
+        traces = tct.getTracesFromArray(traceArray, template)
+        foundTraces.append(len(traces))
+        avg_traces[i] = tct.normMaxMin(tct.average(traces))
+    print('Hittade traces: ' + str(foundTraces))
+
+    plt.figure(10)
+    #plt.plot(tct.normMaxMin(traces[2]))
+    plt.plot(avg_traces[9])
+
     plt.show()
 
 def main():
@@ -34,7 +43,7 @@ def main():
     Kod för att hitta traces ur array
     """
     foundTraces = []
-    avg_traces = np.empty((len(test_trace),400), dtype='float32')
+    avg_traces = np.empty((len(test_trace),400))
 
     triggerLevel = tct.getTriggerLevel(test_trace[1], template, True) # Calculate trigger level once
     for j in range(len(test_trace)):
