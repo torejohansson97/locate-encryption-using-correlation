@@ -15,6 +15,12 @@ def getTracesFromArray(traceArray, template):
 	indices = getTraceIndicesFromEnvelope(corr, corrEnvelopeList, 800)
 	return cutTracesWithIndices(traceArray, indices)
 
+def getEncryptionBlockFromArray(traceArray, template, padding=200):
+	corr = getCorrelation(traceArray, template, False)
+	corrEnvelopeList = getCorrEnvelopeList(corr)
+	indices = getTraceIndicesFromEnvelope(corr, corrEnvelopeList, 0)
+	return cutEncryptionBlocks(traceArray, indices, padding)
+
 def average(traces):
 	return np.mean(traces, axis=0)	# all the traces to one
 
@@ -27,7 +33,7 @@ def normMaxMin(inputArray):
 	return np.array([(x - min) / (max - min) for x in inputArray])
 
 def getTraceIndicesFromEnvelope(corr, envelopeList, offset):
-	print('Getting indexes of correlations peaks...')
+	#print('Getting indexes of correlations peaks...')
 	meanCorr = np.mean(corr)
 	std = np.std(corr)
 	triggerLevel = meanCorr + (std*5)
@@ -39,7 +45,7 @@ def getTraceIndicesFromEnvelope(corr, envelopeList, offset):
 	return indices
 
 def getCorrEnvelopeList(corr, segmentLength=400):
-	print('Saving max amplitudes in segments and their indices to envelope list... (Segment length: ' +str(segmentLength)+')')
+	#print('Saving max amplitudes in segments and their indices to envelope list... (Segment length: ' +str(segmentLength)+')')
 	envelope = [[],[]]
 	startIndex = 0
 	stop = segmentLength
@@ -77,13 +83,23 @@ def getCorrEnvelope(corr, segmentLength=400):
 	return envelope
 
 def cutTracesWithIndices(traceArray, indices):
-	print('Splitting array into traces...')
+	#print('Splitting array into traces...')
 	traces = np.empty((0,400))
 	for i in indices:
 		temp = traceArray[i:i+400]
 		temp = np.reshape(temp, (1,400))
 		traces = np.append(traces, temp, axis=0)
 	return traces
+
+def cutEncryptionBlocks(traceArray, indices, padding):
+	#print('Splitting array into blocks...')
+	blockSize = 4100+2*padding
+	blocks = np.empty((0,blockSize))
+	for i in indices:
+		temp = traceArray[i-padding:i-padding+blockSize]
+		temp = np.reshape(temp, (1,blockSize))
+		blocks = np.append(blocks, temp, axis=0)
+	return blocks
 
 def signOfTraces(trace, template, corr = None):
 	try:
@@ -94,7 +110,6 @@ def signOfTraces(trace, template, corr = None):
 	return np.mean(corr) < 0.49
 
 def getCorrelation(trace, template, norm=True):
-	#print(len(trace), len(template))
 	corr = signal.correlate(trace, template, mode='full', method='auto')
 	corr = corr[len(template):len(trace)]
 	if norm:

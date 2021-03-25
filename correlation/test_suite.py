@@ -12,14 +12,15 @@ def filterTest():
 
     for i in range(len(test_trace)):
         traceArray = test_trace[i,arrayCut:]
-        traces = tct.getTracesFromArray(traceArray, template)
+        #traces = tct.getTracesFromArray(traceArray, template)
+        traces = tct.getEncryptionBlockFromArray(traceArray, template)
         foundTraces.append(len(traces))
-        avg_traces[i] = tct.normMaxMin(tct.average(traces))
+        #avg_traces[i] = tct.normMaxMin(tct.average(traces))
     print('Hittade traces: ' + str(foundTraces))
 
     plt.figure(10)
-    #plt.plot(tct.normMaxMin(traces[2]))
-    plt.plot(avg_traces[9])
+    plt.plot(traces[0])
+    #plt.plot(avg_traces[9])
 
     corr = tct.getCorrelation(test_trace[0], template)
     meanCorr = np.mean(corr)
