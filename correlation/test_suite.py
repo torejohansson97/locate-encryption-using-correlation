@@ -21,6 +21,15 @@ def filterTest():
     #plt.plot(tct.normMaxMin(traces[2]))
     plt.plot(avg_traces[9])
 
+    corr = tct.getCorrelation(test_trace[0], template)
+    meanCorr = np.mean(corr)
+    std = np.std(corr)
+    envelope = tct.getCorrEnvelopeList(corr)[0]
+    triggerLevel = [meanCorr + (std*5)]*len(envelope)
+    plt.figure(11)
+    plt.plot(envelope)
+    plt.plot(triggerLevel)
+
     plt.show()
 
 def main():

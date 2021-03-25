@@ -30,10 +30,11 @@ def getTraceIndicesFromEnvelope(corr, envelopeList, offset):
 	print('Getting indexes of correlations peaks...')
 	meanCorr = np.mean(corr)
 	std = np.std(corr)
+	triggerLevel = meanCorr + (std*5)
 	indices = []
 	amps = envelopeList[0]
 	for i in range(1,len(amps)-1):
-		if amps[i] > meanCorr + (std*5) and amps[i] > amps[i-1] and amps[i] > amps[i+1]: # Check if amp is bigger than half the max value and a local maxima
+		if amps[i] > triggerLevel and amps[i] > amps[i-1] and amps[i] > amps[i+1]: # Check if amp is bigger than half the max value and a local maxima
 			indices.append(envelopeList[1][i]+offset)
 	return indices
 
