@@ -1,6 +1,7 @@
 import correlation_tools as tct
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 def filterTest():
     createTemplateFile()
@@ -22,60 +23,33 @@ def filterTest():
     plt.plot(traces[0])
     #plt.plot(avg_traces[9])
 
-    corr = tct.getCorrelation(test_trace[0], template)
-    meanCorr = np.mean(corr)
-    std = np.std(corr)
-    envelope = tct.getCorrEnvelopeList(corr)[0]
-    triggerLevel = [meanCorr + (std*5)]*len(envelope)
-    plt.figure(11)
-    plt.plot(envelope)
-    plt.plot(triggerLevel)
+    tct.plotEnvelopeWithTrigger(test_trace[0], template)
 
+def templateTest():
+    arrayCut = 2500
+    template, templateName = chooseTemplate('../data/our-data/templates')
+    test_set = np.load('../data/test2/k2/traces.npy')[:,arrayCut:]
+    tracesPerLine = 100
+    totalTraces = tracesPerLine*len(test_set)
+    plt.plot(test_set[0])
     plt.show()
+    arrayCut = intInput('Enter number of samples to cut in beginning: ',0, test_set.shape[1]-(len(template)*2))
+    tct.plotEnvelopeWithTrigger(test_set[2, arrayCut:], template)
+    trigMultiplier = intInput('Enter value for trigger multiplier: ')
 
-def main():
-    i=2
-    templ_length = tct.TEMPLATE_LENGTH
-
-    createTemplateFile()
-
-    # För att plotta ett gammalt trace
-    avg = np.load('../data/ff-em-sca-data/for_training/cable/100k_d1/100avg/nor_traces_maxmin.npy')
-    plotGraph(avg[0], i)
-    i+=1
-
-    template, test_trace = loadData()
-
-    plotGraph(template, i) # plotta templaten som används
-    i+=1
-
-    """
-    Kod för att hitta traces ur array
-    """
+    peakVariance = 0
     foundTraces = []
-    avg_traces = np.empty((len(test_trace),400))
 
-    triggerLevel = tct.getTriggerLevel(test_trace[1], template, True) # Calculate trigger level once
-    for j in range(len(test_trace)):
-        print("Sign of traces: " + str(tct.signOfTraces(test_trace[j], template)))
-        #triggerLevel = tct.getTriggerLevel(test_trace[j], template, (j==7))
-        traces, indexes = tct.getTracesFromArray(tct.normMaxMin(test_trace[j,200000:]), template, triggerLevel, (j==7))
-        foundTraces.append(len(traces))
-        avg_traces[j] = tct.average(traces)
-    print("Number of traces found: " + str(foundTraces))
-    #plt.figure(i)
-    #i+=1
-    #plt.plot(range(traces.shape[1]), traces[10])
-    plotGraph(range(avg_traces.shape[1]), avg_traces[0], i)
-    i+=1
+    for i in range(len(test_set)):
+        traceArray = test_set[i,arrayCut:]
 
-    """
-    indexDiffBins, quantities = getIndexDiffBins(indexes)
-    plt.figure(i)
-    plt.plot(indexDiffBins, quantities)
-    """
-    #plt.plot(range(0, len(test_trace)), test_trace, range(np.argmax(corr)-templ_length, np.argmax(corr)), avg, range(templ_length, len(test_trace)), corr)
-    plt.show()
+        corr = tct.getCorrelation(traceArray, template, False)
+        corrEnvelopeList = tct.getCorrEnvelopeList(corr)
+        indices = tct.getTraceIndicesFromEnvelope(corr, corrEnvelopeList, 800, trigMultiplier)
+        foundTraces.append(len(indices))
+        #avg_traces[i] = tct.normMaxMin(tct.average(traces))
+    print('Hittade traces: ' + str(foundTraces))
+    writeToStatsFile('../data/our-data/templates/stats.txt', generateLineFromStats(templateName, sum(foundTraces), totalTraces, std, trigMult, avgPeakVal, peakVariance))
 
 def createTemplateFile():
     """
@@ -92,6 +66,83 @@ def createTemplateFile():
 	#avg = combine()
 	#np.save('avg_combined.npy', avg)
 
+def chooseTemplate(templatesPath):
+    templates = []
+    i = 0
+    for subdir, dirs, files in os.walk(templatesPath):
+        for file in files:
+            if file.endswith('.npy'):
+                filepath = os.path.join(subdir, file)
+                templates.append([subdir, file])
+                i+=1
+                print('['+str(i)+'] '+ file)
+    choice = intInput('Which template do you want to use? (1-'+str(i)+')', 1, i)
+    filepath = os.path.join(templates[choice-1][0], templates[choice-1][1])
+    name = templates[choice-1][1]
+    return np.load(filepath), name
+
+def intInput(question, min=1, max=100):
+    while True:
+        try:
+            strInput = input(question)
+            value = int(strInput)
+            if value in range(min,max+1):
+                break
+        except:
+            pass
+        print('Invalid input!')
+    return value
+
+def writeToStatsFile(filepath, line):
+    while True:
+        try:
+            with open('filepath', 'a') as f:
+                f.write(line)
+                break
+        except IOError:
+            createStatsFile(filepath)
+        if input('File did not exist, do you want to go again? [y/n]')[0] != 'y':
+            break
+
+def createStatsFile(filepath):
+    line1 = '   Template file   |  Found   | Accur. | Total  | Standard | Trig. | Avg. peak |   Peak   |'
+    line2 = '        name       |  traces  |  (%)   | traces |  dev.    | mult. |   value   | variance |'
+    line3 = '‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾'
+    f = open(filepath, 'w')
+    for line in [line1, line2, line3]:
+        f.write(line)
+    file.close()
+
+def generateLineFromStats(templateName, foundTraces, totalTraces, std, trigMult, avgPeakVal, peakVariance):
+    """ Format with number of symbols per segment
+    line1 = '   Template file   |  Found   | Accur. | Total  | Standard | Trig. | Avg. peak |   Peak   |'
+    line2 = '        name       |  traces  |  (%)   | traces |  dev.    | mult. |   value   | variance |'
+    line3 = '‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾'
+    line4 = '          19             10        8        8       10         7         11         10    |'
+    """
+    percentage = round((float(foundTraces)/totalTraces)*100,2)
+    if totalTraces > 1000:
+        totalTraces = str(totalTraces/1000) + 'K'
+    line = (centerInString(templateName, 19) + ' ' +
+            centerInString(str(foundTraces), 10) + ' ' +
+            centerInString(str(percentage), 8) + ' ' +
+            centerInString(str(totalTraces), 8) + ' ' +
+            centerInString(str(round(std,3)), 10) + ' ' +
+            centerInString(str(trigMult), 7) + ' ' +
+            centerInString(str(round(avgPeakVal,3)), 11) + ' ' +
+            centerInString(str(round(peakVariance,3)), 10) + '|')
+    return line
+
+def centerInString(text, strLength):
+    if len(text)>strLength:
+        return text[0:strLength]
+    elif len(text)<strLength:
+        temp = ' '*strLength
+        startIndex = (strLength-len(text))//2
+        temp[startIndex:startIndex+len(text)] = text
+        return temp
+    return text
+
 def loadData():
     """
     Loading template and trace array from files
@@ -106,16 +157,6 @@ def loadData():
     traceArray = np.load('../data/test2/k2/traces.npy')
     return template, traceArray
 
-def plotGraph(xAxis, yAxis, windowNr=None):
-    """
-    For plotting graphs more neatly
-    """
-    if windowNr == None:
-        plt.figure(yAxis)
-        plt.plot(xAxis)
-    else:
-        plt.figure(windowNr)
-        plt.plot(xAxis, yAxis)
 
 def getIndexDiffBins(indexes):
     """
@@ -148,8 +189,8 @@ def combine():
 	return np.mean(avg, axis=0)	# Average end trace
 
 if __name__ == "__main__":
-    input = input('Vilket test vill du göra, main (m) eller filter (f)?')[0]
-    if input == 'f':
+    userInput = input('Vilket test vill du göra, template (t) eller filter (f)?')[0]
+    if userInput == 'f':
         filterTest()
-    elif input == 'm':
-        main()
+    elif userInput == 't':
+        templateTest()
