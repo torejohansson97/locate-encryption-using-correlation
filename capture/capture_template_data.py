@@ -7,6 +7,7 @@ import serial
 import time
 import numpy as np
 from scipy import signal
+from matplotlib import pyplot as plt
 
 sys.path.append('../correlation')
 import correlation_tools as ct
@@ -16,9 +17,12 @@ from capture import *
 def main():
 	outputfile = '../data/our-data/raw'
 	targetDevice = '/dev/ttyACM0'
-	repetiotion = 1
+	repetiotion = 2
+	numberOfKeys = 50
 	key = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 	plaintext = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+	template=np.load('../correlation/avg_of_one_withzeros.npy')
+	losttraces = 0
 	
 	recorder = capture(outfile=outputfile)
 	
@@ -27,80 +31,98 @@ def main():
 	setChannel(dev)
 	setPower(dev)
 	startCarrier(dev)
-	 
-	for i in range(1,2): # 1
+
+	enterTinyAES(dev)
+	setRepetition(dev, repetiotion)
+	recorder.start()
+	
+	dir = '../data/our-data/for_template/100k_d10_k50_1avg_1rep'
+	keys = np.load(dir + '/key.npy')
+	plaintext = np.load(dir + '/pt.npy')
+	total = plaintext.shape[0]
+	i = 0
+	traceNumber = 0
+
+	printProgressBar(0, total, prefix = 'Progress:', suffix = 'Complete', length = 50)
+	for key in keys:
 		count=0
 		start = time.perf_counter()
-		dir = '../data/our-data/for_testing/5k_d10_1avg_long_trace'
-		key = np.load(dir + '/key.npy')
-		plaintext = np.load(dir + '/pt.npy')
-		
-		total = plaintext.shape[0]
-		printProgressBar(0, total, prefix = 'Progress:', suffix = 'Complete', length = 50)
-
-		recorder.start()
-		time.sleep(0.07) # Sleep to prevent noise in encryption
-		for text in plaintext[0:1000]:
+		i+=1
+		setKey(dev, key)
+	
+		for text in plaintext:
 			count+=1
+			traceNumber+=1
 			eta = ((time.perf_counter()-start)/count)*(total-count)
-			printProgressBar(count, total, prefix = 'Key ' + str(i) + '/1 Progress:', suffix = 'Complete, ETA: '+str(round((eta/60)))+' min', length = 50)
-			
-			printMenu(dev)
-			enterTinyAES(dev)
-			setRepetition(dev, repetiotion)
-			setKey(dev, key)
+			if eta > 60:
+				printProgressBar(count, total, prefix = 'Key ' + str(i) + '/' + str(numberOfKeys) + ' Progress:', suffix = 'Complete, Time Remaining: '+ str(round((eta/60)))+' min', length = 50)
+
+			else:
+				printProgressBar(count, total, prefix = 'Key ' + str(i) + '/' + str(numberOfKeys) + ' Progress:', suffix = 'Complete, Time Reamining: '+ str(round(eta))+' sec', length = 50)
+
 			setPlainText(dev, text)
-			runEncryption(dev)
-			quitMode(dev)
+			while True:
+				os.remove(outputfile)
+				recorder.blocks_file_sink_0.open(outputfile)
+				time.sleep(0.06) # Sleep to prevent noise in encryption
+				runEncryption(dev)
+				
+				time.sleep(0.01)
+				recorder.blocks_file_sink_0.close()
+				raw = np.fromfile(outputfile, dtype='float32')[-120000:]
+				encryptionBlock = ct.getEncryptionBlockFromArray(raw, template)
+				if encryptionBlock.shape[0] != 2:
+					print("Hittade " + str(encryptionBlock.shape[0]) + ' block')
+					plt.ion()
+					plt.show()
+					corr = ct.getCorrelation(raw, template)
+					meanCorr = np.mean(corr)
+					std = np.std(corr)
+					envelope = ct.getCorrEnvelopeList(corr)[0]
+					triggerLevel = [meanCorr + (std*15)]*len(envelope)
+					plt.figure(11)
+					plt.plot(envelope)
+					plt.plot(triggerLevel)
+					plt.draw()
+					plt.pause(10)
+					plt.close()
+					losttraces+=1
+					# for i in encryptionBlock:
+					#     plt.plot(i)
+					#     plt.draw()
+					#     plt.pause(5)
+					#     plt.close()
+				else:
+					encryptionBlock = encryptionBlock[0]
+					encryptionBlock = encryptionBlock.reshape(1, len(encryptionBlock)) # Transpose
+					
+					if not os.path.exists(dir + '/traces.npy'):
+						length = encryptionBlock.shape[1] 
+						traces = np.memmap(dir + '/traces.npy', dtype='float32', mode='w+', shape=(total*numberOfKeys, length))
+						
+					traces[traceNumber-1, :] = encryptionBlock
+					break
 			
-		recorder.stop()
-		recorder.wait()
-		raw = np.fromfile(outputfile, dtype='float32')[340000:] # Cut the crap
-
-		raw = raw.reshape(1, len(raw)) # Transpose
-		
-		if not os.path.exists(dir + '/traces.npy'):
-			length = raw.shape[1] 
-			traces = np.memmap(dir + '/traces.npy', dtype='float32', mode='w+', shape=(total, length))
-			traces[0, :] = raw # First row is raw
-
-		else:
-			diff = length - raw.shape[1]
-			if diff > 0:
-				temp = np.zeros((1, traces.shape[1]))
-				temp[0, :raw.shape[1]] = raw[0]
-				raw = temp
-			elif diff < 0:
-				raw = raw[:1, 0:length] # Trim the capured to equal length
 			
-			traces[count-1, :] = raw
+
+		print('Time: ' + str(time.perf_counter() - start) + 'Lost traces: ' + str(losttraces))
 		
-		recorder.blocks_file_sink_0.close()
-		os.remove(outputfile)
-		recorder.blocks_file_sink_0.open(outputfile)
-		
-		traces.flush() # Save to disk
-		print('Time: ' + str(time.perf_counter() - start))
-		#print('Shape: ' + str(traces.shape))
+	traces.flush() # Save to disk
+	
+	#print('Shape: ' + str(traces.shape))
 	
 	print('\nFinished!')
 	exitTinyAES(dev)    
 	stopCarrier(dev)
 	print('Total time: ' + str(round(time.perf_counter() - start)/60) + ' min')
 	# Clean up and exit
+	recorder.stop()
+	recorder.wait()
 	dev.close()
 
 def enterTinyAES(device):
 	device.write(b'n') # Enter tinyAES
-	device.readline()
-
-def printMenu(device):
-	device.write(b'h')
-	device.read_until(b'q: Quit aes_masked mode\r\n') # Last menu string
-
-def quitMode(device):
-	device.write(b'q')
-	device.readline()
+	print(device.readline())
 
 def exitTinyAES(device):
 	device.write(b'q') # Quit tinyAES
@@ -128,7 +150,7 @@ def stopCarrier(device):
 def setRepetition(device, repetiotion=2000):
 	#print("Set rep")
 	device.write(b'n' + str(repetiotion).encode() + b'\r\n')
-	device.readline()  
+	print(device.readline())    
 	
 def setKey(device, key):
 	# Assumes i tinyAES mode
