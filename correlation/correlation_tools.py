@@ -21,21 +21,6 @@ def getEncryptionBlockFromArray(traceArray, template, padding=200):
 	indices = getTraceIndicesFromEnvelope(corr, corrEnvelopeList, 0)
 	return cutEncryptionBlocks(traceArray, indices, padding)
 
-def plotEnvelopeWithTrigger(traceArray, template):
-	corr = getCorrelation(traceArray, template)
-	meanCorr = np.mean(corr)
-	std = np.std(corr)
-	envelope = getCorrEnvelopeList(corr)[0]
-	triggerLevel1 = [meanCorr + (std*5)]*len(envelope)
-	triggerLevel2 = [meanCorr + (std*10)]*len(envelope)
-	triggerLevel3 = [meanCorr + (std*20)]*len(envelope)
-	plt.plot(envelope, label='Envelope')
-	plt.plot(triggerLevel1, label='triggerMultiplier = 5')
-	plt.plot(triggerLevel2, label='triggerMultiplier = 10')
-	plt.plot(triggerLevel3, label='triggerMultiplier = 20')
-	plt.legend(loc="upper left")
-	plt.show()
-
 def average(traces):
 	return np.mean(traces, axis=0)	# all the traces to one
 
@@ -58,6 +43,22 @@ def getTraceIndicesFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10
 		if amps[i] > triggerLevel and amps[i] > amps[i-1] and amps[i] > amps[i+1]: # Check if amp is bigger than half the max value and a local maxima
 			indices.append(envelopeList[1][i]+offset)
 	return indices
+
+def getTraceStatsFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10):
+	#print('Getting indexes of correlations peaks...')
+	meanCorr = np.mean(corr)
+	std = np.std(corr)
+	triggerLevel = meanCorr + (std*triggerMultiplier)
+	numIndices = 0
+	peaks = []
+	amps = envelopeList[0]
+	for i in range(1,len(amps)-1):
+		if amps[i] > triggerLevel and amps[i] > amps[i-1] and amps[i] > amps[i+1]: # Check if amp is bigger than half the max value and a local maxima
+			numIndices+=1
+			peaks.append(amps[i])
+	peakVariance = np.var(peaks)
+	peakMean = np.mean(peaks)
+	return numIndices, peakMean, peakVariance, meanCorr, std
 
 def getCorrEnvelopeList(corr, segmentLength=400):
 	#print('Saving max amplitudes in segments and their indices to envelope list... (Segment length: ' +str(segmentLength)+')')
@@ -131,6 +132,20 @@ def getCorrelation(trace, template, norm=True):
 		corr = normMaxMin(corr)
 	return corr
 
+def plotEnvelopeWithTrigger(traceArray, template):
+	corr = getCorrelation(traceArray, template)
+	meanCorr = np.mean(corr)
+	std = np.std(corr)
+	envelope = getCorrEnvelopeList(corr)[0]
+	triggerLevel1 = [meanCorr + (std*5)]*len(envelope)
+	triggerLevel2 = [meanCorr + (std*10)]*len(envelope)
+	triggerLevel3 = [meanCorr + (std*15)]*len(envelope)
+	plt.plot(envelope, label='Envelope')
+	plt.plot(triggerLevel3, label='triggerMultiplier = 15')
+	plt.plot(triggerLevel2, label='triggerMultiplier = 10')
+	plt.plot(triggerLevel1, label='triggerMultiplier = 5')
+	plt.legend(loc="upper left")
+	plt.show()
 
 """ Old code: """
 """
