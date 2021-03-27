@@ -55,9 +55,12 @@ def getTraceStatsFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10):
 	for i in range(1,len(amps)-1):
 		if amps[i] > triggerLevel and amps[i] > amps[i-1] and amps[i] > amps[i+1]: # Check if amp is bigger than half the max value and a local maxima
 			numIndices+=1
-			peaks.append(amps[i])
-	peakVariance = np.var(peaks)
-	peakMean = np.mean(peaks)
+			peaks.append(amps[i])	
+	try:
+		peakVariance = np.var(peaks)
+		peakMean = sum(peaks)/len(peaks)
+	except ZeroDivisionError:
+		peakMean = None
 	return numIndices, peakMean, peakVariance, meanCorr, std
 
 def getCorrEnvelopeList(corr, segmentLength=400):
