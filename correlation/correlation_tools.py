@@ -11,14 +11,14 @@ TEMPLATE_LENGTH = 4100
 
 def getTracesFromArray(traceArray, template):
 	corr = getCorrelation(traceArray, template, False)
-	corrEnvelopeList = getCorrEnvelopeList(corr)
+	corrEnvelopeList = getCorrEnvelopeList(corr, False)
 	indices = getTraceIndicesFromEnvelope(corr, corrEnvelopeList, 800)
 	return cutTracesWithIndices(traceArray, indices)
 
-def getEncryptionBlockFromArray(traceArray, template, padding=200):
+def getEncryptionBlockFromArray(traceArray, template, padding=200, triggerMultiplier=10):
 	corr = getCorrelation(traceArray, template, False)
-	corrEnvelopeList = getCorrEnvelopeList(corr)
-	indices = getTraceIndicesFromEnvelope(corr, corrEnvelopeList, 0)
+	corrEnvelopeList = getCorrEnvelopeList(corr, False)
+	indices = getTraceIndicesFromEnvelope(corr, corrEnvelopeList, 0, triggerMultiplier)
 	return cutEncryptionBlocks(traceArray, indices, padding)
 
 def average(traces):
@@ -55,7 +55,7 @@ def getTraceStatsFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10):
 	for i in range(1,len(amps)-1):
 		if amps[i] > triggerLevel and amps[i] > amps[i-1] and amps[i] > amps[i+1]: # Check if amp is bigger than half the max value and a local maxima
 			numIndices+=1
-			peaks.append(amps[i])	
+			peaks.append(amps[i])
 	try:
 		peakVariance = np.var(peaks)
 		peakMean = sum(peaks)/len(peaks)
@@ -63,20 +63,22 @@ def getTraceStatsFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10):
 		peakMean = None
 	return numIndices, peakMean, peakVariance, meanCorr, std
 
-def getCorrEnvelopeList(corr, segmentLength=400):
+def getCorrEnvelopeList(corr, normalize, trace=[], segmentLength=400):
 	#print('Saving max amplitudes in segments and their indices to envelope list... (Segment length: ' +str(segmentLength)+')')
 	envelope = [[],[]]
 	startIndex = 0
 	stop = segmentLength
 	length = len(corr)
 	while startIndex < length and stop == segmentLength:
+		std = 1
 		if startIndex + segmentLength > length:
-			index = startIndex + np.argmax(corr[startIndex:len(corr)])
-			biggest = corr[index]
 			stop = length - 1 - startIndex
-		else:
-			index = startIndex + np.argmax(corr[startIndex:startIndex+segmentLength])
-			biggest = corr[index]
+		segment = corr[startIndex:startIndex+stop]
+		if normalize and len(trace) != 0:
+			traceSegment = trace[startIndex:startIndex+stop]
+			std = (np.std(traceSegment)/np.std(segment))
+		index = startIndex + np.argmax(segment)
+		biggest = corr[index]/std
 		envelope[0].append(biggest)
 		envelope[1].append(index)
 		startIndex+=segmentLength
@@ -139,7 +141,7 @@ def plotEnvelopeWithTrigger(traceArray, template):
 	corr = getCorrelation(traceArray, template)
 	meanCorr = np.mean(corr)
 	std = np.std(corr)
-	envelope = getCorrEnvelopeList(corr)[0]
+	envelope = getCorrEnvelopeList(corr, False, traceArray)[0]
 	triggerLevel1 = [meanCorr + (std*5)]*len(envelope)
 	triggerLevel2 = [meanCorr + (std*10)]*len(envelope)
 	triggerLevel3 = [meanCorr + (std*15)]*len(envelope)
