@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: GPL-3.0
 #
 # GNU Radio Python Flow Graph
-# Title: capture
+# Title: SDR
 # GNU Radio version: 3.8.1.0
 # Modified: torej 2021-03-16
 
@@ -25,10 +25,10 @@ from gnuradio import uhd
 
 from gnuradio import qtgui
 
-class capture(gr.top_block):
+class SDR(gr.top_block):
 
 	def __init__(self, outfile='outfile'):
-		gr.top_block.__init__(self, "capture")
+		gr.top_block.__init__(self, "SDR")
 		
 		##################################################
 		# Variables
@@ -71,7 +71,7 @@ class capture(gr.top_block):
 
 
 	def closeEvent(self, event):
-		self.settings = Qt.QSettings("GNU Radio", "capture")
+		self.settings = Qt.QSettings("GNU Radio", "SDR")
 		self.settings.setValue("geometry", self.saveGeometry())
 		event.accept()
 

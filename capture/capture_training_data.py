@@ -12,27 +12,27 @@ from matplotlib import pyplot as plt
 sys.path.append('../correlation')
 import correlation_tools as ct
 
-from capture import *
+from sdr import *
+from targetDevice import *
 
 def main():
 	outputfile = '../data/our-data/raw'
-	targetDevice = '/dev/ttyACM0'
+	targetDevicePort = '/dev/ttyACM0'
 	repetiotion = 200
 	numberOfKeys = 5
 	key = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 	plaintext = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 	template=np.load('../correlation/avg1_withzeros.npy') #TODO: Välj rätt template
 	
-	recorder = capture(outfile=outputfile)
-	
-	dev = serial.Serial(targetDevice, baudrate=115200, timeout=10)
+	recorder = SDR(outfile=outputfile)
+	target = TargetDevice(targetDevicePort)
 
-	setChannel(dev)
-	setPower(dev)
-	startCarrier(dev)
+	target.setChannel()
+	target.setPower()
+	target.startCarrier()
 
-	enterTinyAES(dev)
-	setRepetition(dev, repetiotion)
+	target.enterTinyAES()
+	target.setRepetition(repetiotion)
 	recorder.start()
 	
 	for i in range(1,numberOfKeys+1):
@@ -40,23 +40,22 @@ def main():
 		keys = np.load(dir + '/key.npy')
 		plaintext = np.load(dir + '/pt.npy')
 		total = plaintext.shape[0]
-		setKey(dev, key)
+		target.setKey(key)
 		
 		count=0
 		start = time.perf_counter()
 		for text in plaintext:
-			setPlainText(dev, text)
+			target.setPlainText(text)
 			while True:
 				os.remove(outputfile)
 				recorder.blocks_file_sink_0.open(outputfile)
-				runEncryption(dev)
+				target.runEncryption()
 				recorder.blocks_file_sink_0.close()
 
 				raw = np.fromfile(outputfile, dtype='float32')[20000:-2000] #TODO: Behövs detta, tweaka std
 				plt.plot(raw)
 				plt.show()
 				encryptionBlock = ct.getEncryptionBlockFromArray(raw, template) # 5 sigma
-				print('Found: ' + str(encryptionBlock.shape[0]))
 				#time.sleep(10)
 
 				if encryptionBlock.shape[0] < 150: #!= repetiotion:
@@ -95,78 +94,13 @@ def main():
 		
 	
 	# Clean up and exit
-	exitTinyAES(dev)   
-	stopCarrier(dev)
+	target.exitTinyAES()   
+	target.stopCarrier()
 	recorder.stop()
 	recorder.wait()
-	dev.close()
+	target.close()
 
 	print('\nFinished!')
-
-def enterTinyAES(device):
-	device.write(b'n') # Enter tinyAES
-	print(device.readline())
-
-def exitTinyAES(device):
-	device.write(b'q') # Quit tinyAES
-	print(device.readline())
-
-def setChannel(device, channel='0'):
-	#print("Set channel")
-	device.write(b'a')
-	print(device.readline())
-	device.write(b'0\r\n')
-	print(device.readline())
-
-def setPower(device, power='0'):
-	#print("Set pwr")
-	device.write(b'p0')
-	print(device.readline())
-	print(device.readline())
-
-def startCarrier(device):
-	device.write(b'c')
-
-def stopCarrier(device):
-	device.write(b'e')
-
-def setRepetition(device, repetiotion=2000):
-	#print("Set rep")
-	device.write(b'n' + str(repetiotion).encode() + b'\r\n')
-	print(device.readline())    
-	
-def setKey(device, key):
-	# Assumes i tinyAES mode
-	#print("Set key")
-	command_line = '%s%s\r' % ('k', " ".join(str(char) for char in key))
-	device.write(command_line.encode())
-	#print(device.readline())
-	device.readline()
-
-def setPlainText(device, text):
-	# Assumes i tinyAES mode
-	#print("\nSet PT")
-	command_line = '%s%s\r' % ('p', " ".join(str(char) for char in text))
-	device.write(command_line.encode())
-	#print(command_line.encode())
-	#print(device.readline())
-	device.readline()
-	
-	
-def runEncryption(device):
-	#print("Encrypting...")
-	device.write(b'r')
-	#print(device.read_until(b'Done\r\n'))
-	device.read_until(b'Done\r\n')
-
-def extractTraces(array, template, triggerLevel):
-	templ_length = len(template)
-	print('Correlating...')
-	corr = signal.correlate(array, template, mode='full', method='auto')
-	corr = ct.normMaxMin(corr[templ_length:len(array)])
-	traces, indexes = ct.makeTraces(corr, array, triggerLevel, 3548)
-	
-	return traces
 
 # Print iterations progress
 def printProgressBar (iteration, total, startTime):
