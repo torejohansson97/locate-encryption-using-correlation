@@ -26,17 +26,20 @@ def filterTest():
     tct.plotEnvelopeWithTrigger(test_trace[0], template)
 
 def templateTest():
-    arrayCut = 2500
+    #arrayCut = 2500
     template, templateName = chooseTemplate('../data/our-data/templates')
-    test_set = np.load('../data/test2/k2/traces.npy')[:,arrayCut:]
-    tracesPerLine = 100
-    totalTraces = tracesPerLine*len(test_set)
-    plt.plot(test_set[0])
-    plt.show()
-    arrayCut = 400000
+    #test_set = np.load('../data/test2/k2/traces.npy')[:,arrayCut:]
+    test_set = np.memmap('../data/our-data/for_testing/10k_d10_k'+str(1)+'_1avg_10rep/traces.npy', dtype='float32', mode='r', shape=(10000,130000))
+    tracesPerRow = 10
+    rowsPerKey = len(test_set)
+    keyFolders = 5
+    totalTraces = tracesPerRow*rowsPerKey*keyFolders
+    #plt.plot(test_set[0])
+    #plt.show()
+    #arrayCut = 400000
     arrayCut = intInput('Enter number of samples to cut in beginning: ',0, test_set.shape[1]-(len(template)*2))
     tct.plotEnvelopeWithTrigger(test_set[2, arrayCut:], template)
-    trigMultiplier = 10
+    #trigMultiplier = 10
     trigMultiplier = intInput('Enter value for trigger multiplier: ')
 
     foundTraces = []
@@ -45,25 +48,27 @@ def templateTest():
     meanCorrList = []
     stdList = []
 
-    totalLoops = len(test_set)
-    for i in range(totalLoops):
-        print('Current trace: '+str(i+1)+'/'+str(totalLoops), end='\r')
-        traceArray = test_set[i,arrayCut:]
+    for key in range(1,keyFolders+1):
+        test_set = np.memmap('../data/our-data/for_testing/10k_d10_k'+str(key)+'_1avg_10rep/traces.npy', dtype='float32', mode='r', shape=(10000,130000))
+        for i in range(rowsPerKey):
+            print('Current trace: '+str((i*tracesPerRow)+(key-1)*rowsPerKey*tracesPerRow)+'/'+str(totalTraces), end='\r')
+            traceArray = test_set[i,arrayCut:]
 
-        corr = tct.getCorrelation(traceArray, template, False)
-        corrEnvelopeList = tct.getCorrEnvelopeList(corr)
-        numIndices, peakMean, peakVariance, meanCorr, std = tct.getTraceStatsFromEnvelope(corr, corrEnvelopeList, 800, trigMultiplier)
-        foundTraces.append(numIndices)
-        peakMeanList.append(peakMean)
-        peakVarList.append(peakVariance)
-        meanCorrList.append(meanCorr)
-        stdList.append(std)
-    print()
+            corr = tct.getCorrelation(traceArray, template, False)
+            corrEnvelopeList = tct.getCorrEnvelopeList(corr)
+            numIndices, peakMean, peakVariance, meanCorr, std = tct.getTraceStatsFromEnvelope(corr, corrEnvelopeList, 800, trigMultiplier)
+            foundTraces.append(numIndices)
+            if peakMean != None:
+                peakMeanList.append(peakMean)
+                peakVarList.append(peakVariance)
+            meanCorrList.append(meanCorr)
+            stdList.append(std)
+    print('\a')
     avgPeakVal = np.mean(peakMeanList)
     peakVariance = np.mean(peakVarList)
     meanCorr = np.mean(meanCorrList)
     std = np.mean(stdList)
-    #print('Hittade traces: ' + str(foundTraces))
+    print('Hittade traces: ' + str(sum(foundTraces)))
     writeToStatsFile('../data/our-data/templates/stats.txt',
                      generateLineFromStats(templateName, sum(foundTraces),
                                            totalTraces, meanCorr, std, trigMultiplier,
@@ -129,8 +134,11 @@ def generateLineFromStats(templateName, foundTraces, totalTraces, meanCorr, std,
     line4 = '         19        |     10        8        8       8        10         7         11         10    |'
     """
     percentage = round((float(foundTraces)/totalTraces)*100,2)
-    if totalTraces > 1000:
-        totalTraces = str(totalTraces/1000) + 'K'
+    if totalTraces >= 1000:
+        temp = totalTraces/1000
+        if temp.is_integer():
+            temp = int(temp)
+        totalTraces = str(temp) + 'K'
     line = (centerInString(templateName.strip('.npy'), 19) + ' ' +
             centerInString(str(foundTraces), 10) + ' ' +
             centerInString(str(percentage), 8) + ' ' +
