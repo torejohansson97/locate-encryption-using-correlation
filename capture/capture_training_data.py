@@ -21,7 +21,7 @@ def main():
 	numberOfKeys = 5
 	key = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 	plaintext = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-	template=np.load('../correlation/avg_of_one_withzeros.npy') #TODO: Välj rätt template
+	template=np.load('../correlation/avg1_withzeros.npy') #TODO: Välj rätt template
 	
 	recorder = capture(outfile=outputfile)
 	
@@ -35,26 +35,16 @@ def main():
 	setRepetition(dev, repetiotion)
 	recorder.start()
 	
-	
 	for i in range(1,numberOfKeys+1):
 		dir = '../data/our-data/for_training/100k_d10_k' + str(i) + '_100avg'
 		keys = np.load(dir + '/key.npy')
 		plaintext = np.load(dir + '/pt.npy')
 		total = plaintext.shape[0]
-		printProgressBar(0, total, prefix = 'Progress:', suffix = 'Complete', length = 50)
 		setKey(dev, key)
 		
 		count=0
 		start = time.perf_counter()
 		for text in plaintext:
-			count+=1
-			eta = ((time.perf_counter()-start)/count)*(total-count)
-			if eta > 60:
-				printProgressBar(count, total, prefix = 'Key ' + str(i) + '/' + str(numberOfKeys) + ' Progress:', suffix = 'Complete, Time Remaining: '+ str(round((eta/60)))+' min', length = 50)
-
-			else:
-				printProgressBar(count, total, prefix = 'Key ' + str(i) + '/' + str(numberOfKeys) + ' Progress:', suffix = 'Complete, Time Reamining: '+ str(round(eta))+' sec', length = 50)
-
 			setPlainText(dev, text)
 			while True:
 				os.remove(outputfile)
@@ -86,31 +76,32 @@ def main():
 					plt.close()
 				
 				else:
-					encryptionBlock = encryptionBlock[50:150] # Take the 100 middle block, do this to avoid delays before and after encryption.
-					#TODO: Avg100, dvs av alla block i encryptionBlock
+					encryptionBlock = encryptionBlock[50:150] # Take the 100 middle block, do this to avoid having delays before and after encryption.
 					encryptionBlock = encryptionBlock.reshape(1, len(encryptionBlock)) # Transpose
+					avg100 = numpy.average(encryptionBlock, axis=0) # Average
 					
 					if not os.path.exists(dir + '/traces.npy'):
-						length = encryptionBlock.shape[1] 
+						length = avg100.shape[1] 
 						traces = np.memmap(dir + '/traces.npy', dtype='float32', mode='w+', shape=(total, length))
 						
-					traces[count-1, :] = encryptionBlock
-					break
-			
-		print('Time: ' + str(time.perf_counter() - start))
+					traces[count, :] = avg100
+					break # while-loop breaks if everything went well
+				
+			#--- Update stuff ---#	
+			count+=1
+			printProgressBar(count, total, start)
+		traces.flush() # Save to disk
+		print('Time: ' + str(round((time.perf_counter() - start)/60)) + ' min')
 		
-	traces.flush() # Save to disk
-	
-	print('\nFinished!')
-	exitTinyAES(dev)    
-	stopCarrier(dev)
-	
-	print('Total time: ' + str(round(time.perf_counter() - start)/60) + ' min')
 	
 	# Clean up and exit
+	exitTinyAES(dev)   
+	stopCarrier(dev)
 	recorder.stop()
 	recorder.wait()
 	dev.close()
+
+	print('\nFinished!')
 
 def enterTinyAES(device):
 	device.write(b'n') # Enter tinyAES
@@ -178,23 +169,16 @@ def extractTraces(array, template, triggerLevel):
 	return traces
 
 # Print iterations progress
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
-	"""
-	Call in a loop to create terminal progress bar
-	@params:
-		iteration   - Required  : current iteration (Int)
-		total       - Required  : total iterations (Int)
-		prefix      - Optional  : prefix string (Str)
-		suffix      - Optional  : suffix string (Str)
-		decimals    - Optional  : positive number of decimals in percent complete (Int)
-		length      - Optional  : character length of bar (Int)
-		fill        - Optional  : bar fill character (Str)
-		printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
-	"""
-	percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+def printProgressBar (iteration, total, startTime):
+	length=50
+	timeRemaining =	((time.perf_counter()-startTime)/iteration)*(total-iteration)
+	percent = round(iteration/total, 1) 
 	filledLength = int(length * iteration // total)
-	bar = fill * filledLength + '-' * (length - filledLength)
-	print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+	bar = '█' * filledLength + '-' * (length - filledLength)
+	if timeRemaining > 60:	
+		print('\rProgress |' + bar + '| ' +  str(percent) + '%, Time Remaining: ' + str(round(timeRemaining/60)), end=' min\r') 
+	else:	
+		print('\rProgress |' + bar + '| ' +  str(percent) + '%, Time Remaining: ' + str(round(timeRemaining)), end=' sec\r') 
 	# Print New Line on Complete
 	if iteration == total: 
 		print()
