@@ -10,14 +10,14 @@ import matplotlib.pyplot as plt
 TEMPLATE_LENGTH = 4100
 
 def getTracesFromArray(traceArray, template):
-	corr = getCorrelation(traceArray, template, False)
+	corr = getCorrelation(traceArray, template, True)
 	corrEnvelopeList = getCorrEnvelopeList(corr, False)
 	indices = getTraceIndicesFromEnvelope(corr, corrEnvelopeList, 800)
 	return cutTracesWithIndices(traceArray, indices)
 
-def getEncryptionBlockFromArray(traceArray, template, padding=200, triggerMultiplier=10):
-	corr = getCorrelation(traceArray, template, False)
-	corrEnvelopeList = getCorrEnvelopeList(corr, False)
+def getEncryptionBlocksFromArray(traceArray, template, padding=200, triggerMultiplier=10, normalize=True):
+	corr = getCorrelation(traceArray, template, True)
+	corrEnvelopeList = getCorrEnvelopeList(corr, normalize, traceArray)
 	indices = getTraceIndicesFromEnvelope(corr, corrEnvelopeList, 0, triggerMultiplier)
 	return cutEncryptionBlocks(traceArray, indices, padding)
 
@@ -30,7 +30,8 @@ def averageOfOne(trace, startIndex):
 def normMaxMin(inputArray):
 	max = np.max(inputArray)
 	min = np.min(inputArray)
-	return np.array([(x - min) / (max - min) for x in inputArray])
+	inputArray[:] = (inputArray - min) / (max - min)
+	return inputArray
 
 def getTraceIndicesFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10):
 	#print('Getting indexes of correlations peaks...')
@@ -63,22 +64,33 @@ def getTraceStatsFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10):
 		peakMean = None
 	return numIndices, peakMean, peakVariance, meanCorr, std
 
-def getCorrEnvelopeList(corr, normalize, trace=[], segmentLength=400):
+def getCorrEnvelopeList(corr, normalize, trace=[], segmentLength=600, longSegment=8000):
 	#print('Saving max amplitudes in segments and their indices to envelope list... (Segment length: ' +str(segmentLength)+')')
 	envelope = [[],[]]
+	traceMaxAbs = np.max(np.abs(trace))
 	startIndex = 0
-	stop = segmentLength
+	stopLength = segmentLength
 	length = len(corr)
-	while startIndex < length and stop == segmentLength:
-		std = 1
+	while startIndex < length and stopLength == segmentLength:
+		normFactor = 1
 		if startIndex + segmentLength > length:
-			stop = length - 1 - startIndex
-		segment = corr[startIndex:startIndex+stop]
+			stopLength = length - 1 - startIndex
+		segment = corr[startIndex:startIndex+stopLength]
+		# Normalization code:
 		if normalize and len(trace) != 0:
-			traceSegment = trace[startIndex:startIndex+stop]
-			std = (np.std(traceSegment)/np.std(segment))
+			longSegmentStart = startIndex - int(longSegment/2) + stopLength
+			if longSegmentStart < 0:
+				longSegmentStart = 0
+			longSegmentStop = longSegmentStart+longSegment
+			if longSegmentStart + longSegment > len(trace):
+				longSegmentStop = len(trace)-1
+			longSegmentMax = np.max(np.abs(trace[longSegmentStart:longSegmentStop]))
+			if longSegmentMax == 0:
+				longSegmentMax = traceMaxAbs
+			normFactor = 1/(longSegmentMax*100)
+
 		index = startIndex + np.argmax(segment)
-		biggest = corr[index]/std
+		biggest = (corr[index]**5)*normFactor
 		envelope[0].append(biggest)
 		envelope[1].append(index)
 		startIndex+=segmentLength
@@ -141,7 +153,8 @@ def plotEnvelopeWithTrigger(traceArray, template):
 	corr = getCorrelation(traceArray, template)
 	meanCorr = np.mean(corr)
 	std = np.std(corr)
-	envelope = getCorrEnvelopeList(corr, False, traceArray)[0]
+	envelope = getCorrEnvelopeList(corr, True, traceArray)[0]
+	#plotFrequencies(envelope)
 	triggerLevel1 = [meanCorr + (std*5)]*len(envelope)
 	triggerLevel2 = [meanCorr + (std*10)]*len(envelope)
 	triggerLevel3 = [meanCorr + (std*15)]*len(envelope)
@@ -151,6 +164,14 @@ def plotEnvelopeWithTrigger(traceArray, template):
 	plt.plot(triggerLevel1, label='triggerMultiplier = 5')
 	plt.legend(loc="upper left")
 	plt.show()
+
+def plotFrequencies(array):
+	N = len(array) # Number of samples
+	f_s = 5000000 # Sample frequency of Software defined radio
+	yf = fftpack.fft(array)
+	xf = fftpack.fftfreq(N) * f_s
+	fig, ax = plt.subplots()
+	ax.plot(xf, np.abs(yf))
 
 """ Old code: """
 """

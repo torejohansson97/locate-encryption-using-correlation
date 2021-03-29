@@ -25,22 +25,51 @@ def filterTest():
 
     tct.plotEnvelopeWithTrigger(test_trace[0], template)
 
+def attackTest():
+    template, templateName = chooseTemplate('../data/our-data/templates')
+    traces = np.memmap('../data/our-data/for_testing/long_traces/with_setup/traces_antenna.npy', dtype='float32', mode='r', shape=(50,1261568))
+    rows = len(traces)
+    tracesPerRow = 50
+    totalTraces = tracesPerRow*rows
+    #plt.plot(test_set[0])
+    #plt.show()
+    #arrayCut = 400000
+    tct.plotEnvelopeWithTrigger(traces[3,:], template)
+    #trigMultiplier = 10
+    trigMultiplier = intInput('Enter value for trigger multiplier: ')
+
+    foundTraces = []
+    blocks = np.empty((0,4100))
+    for i in range(rows):
+        print('Current trace: '+str(i*tracesPerRow)+'/'+str(totalTraces), end='\r')
+        traceArray = traces[i,:]
+
+        encryptionBlocks = tct.getEncryptionBlocksFromArray(traceArray, template, 0, trigMultiplier, True)
+        print(len(encryptionBlocks))
+        foundTraces.append(len(encryptionBlocks))
+        blocks = np.append(blocks, encryptionBlocks, axis=0)
+    print('\a')
+    print('Hittade traces: ' + str(sum(foundTraces))+'/'+str(totalTraces))
+    plt.plot(np.mean(blocks, axis=0))
+    plt.show()
+
+
 def templateTest():
     #arrayCut = 2500
     template, templateName = chooseTemplate('../data/our-data/templates')
     #test_set = np.load('../data/test2/k2/traces.npy')[:,arrayCut:]
-    test_set = np.memmap('../data/our-data/for_testing/10k_d10_k'+str(1)+'_1avg_10rep/traces.npy', dtype='float32', mode='r', shape=(10000,130000))
+    test_set = np.memmap(f'../data/our-data/for_testing/10k_d10_k{1}_1avg_10rep/traces.npy', dtype='float32', mode='r', shape=(10000,130000))
     tracesPerRow = 10
     rowsPerKey = len(test_set)
-    keyFolders = 5
+    keyFolders = 5 #/5
     totalTraces = tracesPerRow*rowsPerKey*keyFolders
     #plt.plot(test_set[0])
     #plt.show()
     #arrayCut = 400000
     arrayCut = intInput('Enter number of samples to cut in beginning: ',0, test_set.shape[1]-(len(template)*2))
-    tct.plotEnvelopeWithTrigger(test_set[2, arrayCut:], template)
+    tct.plotEnvelopeWithTrigger(test_set[0, arrayCut:], template)
     #trigMultiplier = 10
-    trigMultiplier = intInput('Enter value for trigger multiplier: ')
+    trigMultiplier = intInput('Enter value for trigger multiplier: ',1,10000000)
 
     foundTraces = []
     peakMeanList = []
@@ -49,15 +78,17 @@ def templateTest():
     stdList = []
 
     for key in range(1,keyFolders+1):
-        test_set = np.memmap('../data/our-data/for_testing/10k_d10_k'+str(key)+'_1avg_10rep/traces.npy', dtype='float32', mode='r', shape=(10000,130000))
+        test_set = np.memmap(f'../data/our-data/for_testing/10k_d10_k{key}_1avg_10rep/traces.npy', dtype='float32', mode='r', shape=(10000,130000))
         for i in range(rowsPerKey):
             print('Current trace: '+str((i*tracesPerRow)+(key-1)*rowsPerKey*tracesPerRow)+'/'+str(totalTraces), end='\r')
             traceArray = test_set[i,arrayCut:]
 
-            corr = tct.getCorrelation(traceArray, template, False)
-            corrEnvelopeList = tct.getCorrEnvelopeList(corr)
+            corr = tct.getCorrelation(traceArray, template, True)
+            corrEnvelopeList = tct.getCorrEnvelopeList(corr, True, traceArray)
             numIndices, peakMean, peakVariance, meanCorr, std = tct.getTraceStatsFromEnvelope(corr, corrEnvelopeList, 800, trigMultiplier)
             foundTraces.append(numIndices)
+            if numIndices > 10:
+                tct.plotEnvelopeWithTrigger(traceArray, template)
             if peakMean != None:
                 peakMeanList.append(peakMean)
                 peakVarList.append(peakVariance)
@@ -133,7 +164,7 @@ def generateLineFromStats(templateName, foundTraces, totalTraces, meanCorr, std,
     line3 = '‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾'
     line4 = '         19        |     10        8        8       8        10         7         11         10    |'
     """
-    percentage = round((float(foundTraces)/totalTraces)*100,2)
+    percentage = round((float(foundTraces)/totalTraces)*100,4)
     if totalTraces >= 1000:
         temp = totalTraces/1000
         if temp.is_integer():
@@ -144,10 +175,10 @@ def generateLineFromStats(templateName, foundTraces, totalTraces, meanCorr, std,
             centerInString(str(percentage), 8) + ' ' +
             centerInString(str(totalTraces), 8) + ' ' +
             centerInString(str(round(meanCorr,4)), 8) + ' ' +
-            centerInString(str(round(std,3)), 10) + ' ' +
+            centerInString(str(round(std,4)), 10) + ' ' +
             centerInString(str(trigMult), 7) + ' ' +
             centerInString(str(round(avgPeakVal,4)), 11) + ' ' +
-            centerInString(str(round(peakVariance,4)), 10) + '|\n')
+            centerInString(str(round(peakVariance,5)), 10) + '|\n')
     return line
 
 def centerInString(text, strLength):
@@ -160,8 +191,10 @@ def centerInString(text, strLength):
     return text
 
 if __name__ == "__main__":
-    userInput = input('Vilket test vill du göra, template (t) eller filter (f)?')[0]
+    userInput = input('Vilket test vill du göra, template (t), filter (f) eller attack (a)?')[0]
     if userInput == 'f':
         filterTest()
     elif userInput == 't':
         templateTest()
+    elif userInput == 'a':
+        attackTest()
