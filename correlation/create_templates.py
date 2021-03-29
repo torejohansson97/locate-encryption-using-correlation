@@ -18,11 +18,11 @@ def main(randomSeed=0):
         numStr = str(temp) + 'k'
     elif numTraces == 1:
         randomSeed = 5674 # Between 0 and 100000
-        numStr = '_'+str(randomSeed)
+        numStr += '_'+str(randomSeed)
     filename = 'avg'+numStr
     startIndex = 200
     #startIndex = 502390
-    templateLength = 400
+    templateLength = 4100
     if templateLength == 400:
         round = 'last'
         if round == 'first':
