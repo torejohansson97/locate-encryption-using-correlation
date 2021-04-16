@@ -7,10 +7,10 @@ sys.path.append('../correlation')
 import correlation_tools as ct
 
 
-DIR = '../data/our-data/for_training/100k_d10_k1_100avg'
+DIR = '../data/our-data/for_training'
 #DIR = '../data/ff-em-sca-data/for_training/cable/100k_d1/100avg'
 
-byteOfInterest = 9
+byteOfInterest = 15
 
 def main():
 	while True:
@@ -181,16 +181,19 @@ def create_attack_model(classes=256):
 
 def load_data(folder, norm=True):
 	if norm:
-		raw = np.memmap(folder + '/traces.npy', dtype='float32', mode='r', shape=(100000,4500))[:100000, 1137:1247]
-		traces = np.zeros((100000, 110))
-		for trace in range(len(raw)):
-			traces[trace] = ct.normMaxMin(raw[trace])
+		traces = np.empty((300000, 110))
+		labels = np.empty(300000)
+		for i in range(1,4):
+			raw = np.memmap(folder + '/100k_d10_k' + str(i) + '_100avg/traces.npy', dtype='float32', mode='r', shape=(100000,4500))[:100000, 1137:1247]
+			for trace in range(len(raw)):
+				traces = np.append(traces, ct.normMaxMin(raw[trace]), axis=0)
+			labels = np.append(labels, np.load(folder + '100k_d10_k' + str(i) + '_100avg/s1_label.npy')[:,byteOfInterest])
 	else:
 		traces = np.memmap(folder + '/traces.npy', dtype='float32', mode='r', shape=(100000,4500))[:100000, 1137:1247]
 		traces = traces.reshape(110, len(traces)) # Transpose
 	
-	labels = np.load(folder + '/s1_label.npy')[:,byteOfInterest]
-	labels = labels.astype('int32')
+	
+	#labels = labels.astype('int32')
 	#traces = np.load(DIR + '/nor_traces_maxmin.npy')[:, 130:240]
 	#labels = np.load(DIR + '/label_0.npy')
 	

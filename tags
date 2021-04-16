@@ -1,0 +1,117 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+DIR	deep-learning/create_labels.py	/^DIR = '..\/data\/our-data\/for_training\/100k_d10_k1_100avg'$/;"	v
+DIR	deep-learning/main.py	/^DIR = '..\/data\/our-data\/for_training\/100k_d10_k1_100avg'$/;"	v
+SDR	capture/sdr.py	/^class SDR(gr.top_block):$/;"	c
+TEMPLATE_LENGTH	correlation/correlation_tools.py	/^TEMPLATE_LENGTH = 4100$/;"	v
+TargetDevice	capture/targetDevice.py	/^class TargetDevice:$/;"	c
+__init__	capture/sdr.py	/^	def __init__(self, outfile='outfile'):$/;"	m	class:SDR
+__init__	capture/targetDevice.py	/^	def __init__(self, port):$/;"	m	class:TargetDevice
+__init__	gnuradio/capture.py	/^    def __init__(self):$/;"	m	class:capture
+__init__	gnuradio/visual.py	/^    def __init__(self):$/;"	m	class:visual
+addSamples	correlation/create_test_trace.py	/^def addSamples(trace1, trace2):$/;"	f
+add_sub_key	deep-learning/aes.py	/^def add_sub_key(block_grid, key_grid):$/;"	f
+aes_sbox	deep-learning/aes.py	/^aes_sbox = [$/;"	v
+average	correlation/correlation_tools.py	/^def average(traces):$/;"	f
+averageOfOne	correlation/correlation_tools.py	/^def averageOfOne(trace, startIndex):$/;"	f
+break_in_grids_of_16	deep-learning/aes.py	/^def break_in_grids_of_16(s):$/;"	f
+capture	gnuradio/capture.py	/^class capture(gr.top_block, Qt.QWidget):$/;"	c
+centerInString	correlation/test_suite.py	/^def centerInString(text, strLength):$/;"	f
+chooseTemplate	correlation/test_suite.py	/^def chooseTemplate(templatesPath):$/;"	f
+close	capture/targetDevice.py	/^	def close(self):$/;"	m	class:TargetDevice
+closeEvent	capture/sdr.py	/^	def closeEvent(self, event):$/;"	m	class:SDR
+closeEvent	gnuradio/capture.py	/^    def closeEvent(self, event):$/;"	m	class:capture
+closeEvent	gnuradio/visual.py	/^    def closeEvent(self, event):$/;"	m	class:visual
+createStatsFile	correlation/test_suite.py	/^def createStatsFile(filepath):$/;"	f
+create_attack_model	deep-learning/main.py	/^def create_attack_model(classes=256):$/;"	f
+create_identification_model	deep-learning/main.py	/^def create_identification_model():$/;"	f
+cutEncryptionBlocks	correlation/correlation_tools.py	/^def cutEncryptionBlocks(traceArray, indices, padding):$/;"	f
+cutTracesWithIndices	correlation/correlation_tools.py	/^def cutTracesWithIndices(traceArray, indices):$/;"	f
+enterTinyAES	capture/targetDevice.py	/^	def enterTinyAES(self):$/;"	m	class:TargetDevice
+exitTinyAES	capture/targetDevice.py	/^	def exitTinyAES(self):$/;"	m	class:TargetDevice
+expand_key	deep-learning/aes.py	/^def expand_key(key, rounds):$/;"	f
+extract_key_for_round	deep-learning/aes.py	/^def extract_key_for_round(expanded_key, round):$/;"	f
+f	data/dispBin.py	/^f = np.fromfile('.\/our-data\/raw', dtype='float32')$/;"	v
+filterTest	correlation/test_suite.py	/^def filterTest():$/;"	f
+generateLineFromStats	correlation/test_suite.py	/^def generateLineFromStats(templateName, foundTraces, totalTraces, meanCorr, std, trigMult, avgPeakVal, peakVariance):$/;"	f
+getAverage	correlation/create_templates.py	/^def getAverage(numTraces, dataSet, startIndex, templateLength, randIndex=0):$/;"	f
+getCorrEnvelope	correlation/correlation_tools.py	/^def getCorrEnvelope(corr, segmentLength=400):$/;"	f
+getCorrEnvelopeList	correlation/correlation_tools.py	/^def getCorrEnvelopeList(corr, normalize, trace=[], segmentLength=400):$/;"	f
+getCorrelation	correlation/correlation_tools.py	/^def getCorrelation(trace, template, norm=True):$/;"	f
+getEncryptionBlockFromArray	correlation/correlation_tools.py	/^def getEncryptionBlockFromArray(traceArray, template, padding=200, triggerMultiplier=10):$/;"	f
+getTraceIndicesFromEnvelope	correlation/correlation_tools.py	/^def getTraceIndicesFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10):$/;"	f
+getTraceStatsFromEnvelope	correlation/correlation_tools.py	/^def getTraceStatsFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10):$/;"	f
+getTracesFromArray	correlation/correlation_tools.py	/^def getTracesFromArray(traceArray, template):$/;"	f
+get_freq	capture/sdr.py	/^	def get_freq(self):$/;"	m	class:SDR
+get_freq	gnuradio/capture.py	/^    def get_freq(self):$/;"	m	class:capture
+get_freq	gnuradio/visual.py	/^    def get_freq(self):$/;"	m	class:visual
+get_samp_rate	capture/sdr.py	/^	def get_samp_rate(self):$/;"	m	class:SDR
+get_samp_rate	gnuradio/capture.py	/^    def get_samp_rate(self):$/;"	m	class:capture
+get_samp_rate	gnuradio/visual.py	/^    def get_samp_rate(self):$/;"	m	class:visual
+insertTrace	correlation/create_test_trace.py	/^def insertTrace(trace, bigTrace, offset):$/;"	f
+insertTraceAverage	correlation/create_test_trace.py	/^def insertTraceAverage(trace, testTrace, offset):$/;"	f
+intInput	correlation/test_suite.py	/^def intInput(question, min=1, max=100):$/;"	f
+lookup	deep-learning/aes.py	/^def lookup(byte):$/;"	f
+main	capture/capture_long_trace.py	/^def main():$/;"	f
+main	capture/capture_template_data.py	/^def main():$/;"	f
+main	capture/capture_test_data.py	/^def main():$/;"	f
+main	capture/capture_training_data.py	/^def main():$/;"	f
+main	correlation/create_templates.py	/^def main(randomSeed=0):$/;"	f
+main	correlation/create_test_trace.py	/^def main():$/;"	f
+main	data/convertToNumpy.py	/^def main():$/;"	f
+main	data/genKeyPT.py	/^def main():$/;"	f
+main	deep-learning/create_labels.py	/^def main():$/;"	f
+main	deep-learning/main.py	/^def main():$/;"	f
+main	gnuradio/capture.py	/^def main(top_block_cls=capture, options=None):$/;"	f
+main	gnuradio/visual.py	/^def main(top_block_cls=visual, options=None):$/;"	f
+mix_column	deep-learning/aes.py	/^def mix_column(column):$/;"	f
+mix_columns	deep-learning/aes.py	/^def mix_columns(grid):$/;"	f
+multiply_by_2	deep-learning/aes.py	/^def multiply_by_2(v):$/;"	f
+multiply_by_3	deep-learning/aes.py	/^def multiply_by_3(v):$/;"	f
+normMaxMin	correlation/correlation_tools.py	/^def normMaxMin(inputArray):$/;"	f
+normMaxMin	correlation/create_test_trace.py	/^def normMaxMin(inputArray):$/;"	f
+plotEnvelopeWithTrigger	correlation/correlation_tools.py	/^def plotEnvelopeWithTrigger(traceArray, template):$/;"	f
+printMenu	capture/targetDevice.py	/^	def printMenu(self):$/;"	m	class:TargetDevice
+printProgressBar	capture/capture_long_trace.py	/^def printProgressBar (iteration, total, startTime):$/;"	f
+printProgressBar	capture/capture_template_data.py	/^def printProgressBar (iteration, total, startTime):$/;"	f
+printProgressBar	capture/capture_test_data.py	/^def printProgressBar (iteration, total, startTime):$/;"	f
+printProgressBar	capture/capture_training_data.py	/^def printProgressBar (iteration, total, startTime):$/;"	f
+quitting	gnuradio/capture.py	/^    def quitting():$/;"	f	function:main
+quitting	gnuradio/visual.py	/^    def quitting():$/;"	f	function:main
+reverse_aes_sbox	deep-learning/aes.py	/^reverse_aes_sbox = [$/;"	v
+reverse_lookup	deep-learning/aes.py	/^def reverse_lookup(byte):$/;"	f
+rotate_row_left	deep-learning/aes.py	/^def rotate_row_left(row, n=1):$/;"	f
+runEncryption	capture/targetDevice.py	/^	def runEncryption(self):$/;"	m	class:TargetDevice
+sBox10out	deep-learning/create_labels.py	/^def sBox10out():$/;"	f
+sBox1out	deep-learning/create_labels.py	/^def sBox1out(key, pt):$/;"	f
+saveToFile	correlation/create_templates.py	/^def saveToFile(filepath, template):$/;"	f
+setChannel	capture/targetDevice.py	/^	def setChannel(self, channel='0'):$/;"	m	class:TargetDevice
+setKey	capture/targetDevice.py	/^	def setKey(self, key):$/;"	m	class:TargetDevice
+setPlainText	capture/targetDevice.py	/^	def setPlainText(self, text):$/;"	m	class:TargetDevice
+setPower	capture/targetDevice.py	/^	def setPower(self, power='0'):$/;"	m	class:TargetDevice
+setRepetition	capture/targetDevice.py	/^	def setRepetition(self, repetiotion=2000):$/;"	m	class:TargetDevice
+set_freq	capture/sdr.py	/^	def set_freq(self, freq):$/;"	m	class:SDR
+set_freq	gnuradio/capture.py	/^    def set_freq(self, freq):$/;"	m	class:capture
+set_freq	gnuradio/visual.py	/^    def set_freq(self, freq):$/;"	m	class:visual
+set_samp_rate	capture/sdr.py	/^	def set_samp_rate(self, samp_rate):$/;"	m	class:SDR
+set_samp_rate	gnuradio/capture.py	/^    def set_samp_rate(self, samp_rate):$/;"	m	class:capture
+set_samp_rate	gnuradio/visual.py	/^    def set_samp_rate(self, samp_rate):$/;"	m	class:visual
+sig_handler	gnuradio/capture.py	/^    def sig_handler(sig=None, frame=None):$/;"	f	function:main
+sig_handler	gnuradio/visual.py	/^    def sig_handler(sig=None, frame=None):$/;"	f	function:main
+signOfTraces	correlation/correlation_tools.py	/^def signOfTraces(trace, template, corr = None):$/;"	f
+soundNoise	correlation/create_test_trace.py	/^def soundNoise(filename):$/;"	f
+startCarrier	capture/targetDevice.py	/^	def startCarrier(self):$/;"	m	class:TargetDevice
+stopCarrier	capture/targetDevice.py	/^	def stopCarrier(self):$/;"	m	class:TargetDevice
+templateTest	correlation/test_suite.py	/^def templateTest():$/;"	f
+traces	data/our-data/plot.py	/^	traces = np.memmap('for_training\/100k_d10_k' + str(f) + '_100avg\/traces.npy', dtype='float32', mode='r', shape=(100000,4500))$/;"	v
+train_model	deep-learning/main.py	/^def train_model(input, labels, model, epochs, batch_size, file_name):$/;"	f
+userInput	correlation/test_suite.py	/^    userInput = input('Vilket test vill du göra, template (t) eller filter (f)?')[0]$/;"	v
+visual	gnuradio/visual.py	/^class visual(gr.top_block, Qt.QWidget):$/;"	c
+whiteNoise	correlation/create_test_trace.py	/^def whiteNoise(length, mean = 0, std = 1):$/;"	f
+writeToStatsFile	correlation/test_suite.py	/^def writeToStatsFile(filepath, line):$/;"	f
+x11	gnuradio/capture.py	/^            x11 = ctypes.cdll.LoadLibrary('libX11.so')$/;"	v
+x11	gnuradio/visual.py	/^            x11 = ctypes.cdll.LoadLibrary('libX11.so')$/;"	v
