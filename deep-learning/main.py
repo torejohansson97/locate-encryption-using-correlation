@@ -181,13 +181,17 @@ def create_attack_model(classes=256):
 
 def load_data(folder, norm=True):
 	if norm:
+		j=0
 		traces = np.empty((300000, 110))
 		labels = np.empty(300000)
 		for i in range(1,4):
 			raw = np.memmap(folder + '/100k_d10_k' + str(i) + '_100avg/traces.npy', dtype='float32', mode='r', shape=(100000,4500))[:100000, 1137:1247]
 			for trace in range(len(raw)):
-				traces = np.append(traces, ct.normMaxMin(raw[trace]), axis=0)
-			labels = np.append(labels, np.load(folder + '100k_d10_k' + str(i) + '_100avg/s1_label.npy')[:,byteOfInterest])
+				traces[j] = ct.normMaxMin(raw[trace])
+				j+=1
+			labels[i*100000-100000:i*100000] =  np.load(folder + '/100k_d10_k' + str(i) + '_100avg/s1_label.npy')[:,byteOfInterest]
+			print(traces.shape)
+			print(labels.shape)
 	else:
 		traces = np.memmap(folder + '/traces.npy', dtype='float32', mode='r', shape=(100000,4500))[:100000, 1137:1247]
 		traces = traces.reshape(110, len(traces)) # Transpose
