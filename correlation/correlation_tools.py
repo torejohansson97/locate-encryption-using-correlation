@@ -28,10 +28,11 @@ def averageOfOne(trace, startIndex):
 	return trace[startIndex:startIndex+TEMPLATE_LENGTH]
 
 def normMaxMin(inputArray):
-	max = np.max(inputArray)
-	min = np.min(inputArray)
-	inputArray[:] = (inputArray - min) / (max - min)
-	return inputArray
+	tempArray = np.array(inputArray.copy())
+	max = np.max(tempArray)
+	min = np.min(tempArray)
+	tempArray[:] = (tempArray - min) / (max - min)
+	return tempArray
 
 def getTraceIndicesFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10):
 	#print('Getting indexes of correlations peaks...')
