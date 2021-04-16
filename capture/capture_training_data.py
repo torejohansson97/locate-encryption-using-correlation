@@ -18,11 +18,11 @@ from targetDevice import *
 def main():
 	outputfile = '../data/our-data/raw'
 	targetDevicePort = '/dev/ttyACM0'
-	repetiotion = 200
+	repetiotion = 110
 	numberOfKeys = 5
 	key = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 	plaintext = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-	template=np.load('../correlation/avg1_withzeros.npy') #TODO: Välj rätt template
+	template=np.load('../data/our-data/templates/avg100.npy')
 	
 	recorder = SDR(outfile=outputfile)
 	target = TargetDevice(targetDevicePort)
@@ -35,6 +35,8 @@ def main():
 	target.setRepetition(repetiotion)
 	recorder.start()
 	
+	beginingOfTime = time.perf_counter()
+
 	for i in range(1,numberOfKeys+1):
 		dir = '../data/our-data/for_training/100k_d10_k' + str(i) + '_100avg'
 		keys = np.load(dir + '/key.npy')
@@ -49,42 +51,29 @@ def main():
 			while True:
 				os.remove(outputfile)
 				recorder.blocks_file_sink_0.open(outputfile)
+				time.sleep(0.005)
 				target.runEncryption()
 				recorder.blocks_file_sink_0.close()
 
-				raw = np.fromfile(outputfile, dtype='float32')[20000:-2000] #TODO: Behövs detta, tweaka std
-				plt.plot(raw)
-				plt.show()
-				encryptionBlock = ct.getEncryptionBlockFromArray(raw, template) # 5 sigma
-				#time.sleep(10)
+				raw = np.fromfile(outputfile, dtype='float32')
+				# plt.plot(raw)
+				# plt.show()
+				try:
+					encryptionBlock = ct.getEncryptionBlockFromArray(raw, template, 200, 9)
 
-				if encryptionBlock.shape[0] < 150: #!= repetiotion:
-					print("Hittade endast" + str(encryptionBlock.shape[0]) + ' block\n')
-					plt.ion()
-					plt.show()
-					corr = ct.getCorrelation(raw, template)
-					meanCorr = np.mean(corr)
-					std = np.std(corr)
-					envelope = ct.getCorrEnvelopeList(corr)[0]
-					triggerLevel = [meanCorr + (std*5)]*len(envelope)
-					plt.figure(11)
-					plt.plot(envelope)
-					plt.plot(triggerLevel)
-					plt.draw()
-					plt.pause(20)
-					plt.close()
-				
-				else:
-					encryptionBlock = encryptionBlock[50:150] # Take the 100 middle block, do this to avoid having delays before and after encryption.
-					encryptionBlock = encryptionBlock.reshape(1, len(encryptionBlock)) # Transpose
-					avg100 = numpy.average(encryptionBlock, axis=0) # Average
-					
-					if not os.path.exists(dir + '/traces.npy'):
-						length = avg100.shape[1] 
-						traces = np.memmap(dir + '/traces.npy', dtype='float32', mode='w+', shape=(total, length))
+					if encryptionBlock.shape[0] == repetiotion:
+						encryptionBlock = encryptionBlock[5:105] # Take the 100 middle block, do this to avoid having delays before and after encryption.
+						avg100 = np.average(encryptionBlock, axis=0) # Average
+						avg100 = avg100.reshape(1, len(avg100)) # Transpose
 						
-					traces[count, :] = avg100
-					break # while-loop breaks if everything went well
+						if not os.path.exists(dir + '/traces.npy'):
+							length = avg100.shape[1] 
+							traces = np.memmap(dir + '/traces.npy', dtype='float32', mode='w+', shape=(total, length))
+							
+						traces[count, :] = avg100
+						break # while-loop breaks if everything went well
+				except ValueError:
+					pass
 				
 			#--- Update stuff ---#	
 			count+=1
@@ -100,13 +89,13 @@ def main():
 	recorder.wait()
 	target.close()
 
-	print('\nFinished!')
+	print('\nFinished! Total time: ' + str(round((time.perf_counter() - beginingOfTime)/60)) + ' min')
 
 # Print iterations progress
 def printProgressBar (iteration, total, startTime):
 	length=50
 	timeRemaining =	((time.perf_counter()-startTime)/iteration)*(total-iteration)
-	percent = round(iteration/total, 1) 
+	percent = round((iteration/total) *100)
 	filledLength = int(length * iteration // total)
 	bar = '█' * filledLength + '-' * (length - filledLength)
 	if timeRemaining > 60:	
