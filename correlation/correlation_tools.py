@@ -77,6 +77,7 @@ def getCorrEnvelopeList(corr, normalize, trace=[], segmentLength=600, longSegmen
 		if startIndex + segmentLength > length:
 			stopLength = length - 1 - startIndex
 		segment = corr[startIndex:startIndex+stopLength]
+		index = startIndex + np.argmax(segment)
 		# Normalization code:
 		if normalize and len(trace) != 0:
 			longSegmentStart = startIndex - int(longSegment/2) + stopLength
@@ -89,9 +90,10 @@ def getCorrEnvelopeList(corr, normalize, trace=[], segmentLength=600, longSegmen
 			if longSegmentMax == 0:
 				longSegmentMax = traceMaxAbs
 			normFactor = 1/(longSegmentMax*100)
+			biggest = (corr[index]**5)*normFactor
+		else:
+			biggest = corr[index]
 
-		index = startIndex + np.argmax(segment)
-		biggest = (corr[index]**5)*normFactor
 		envelope[0].append(biggest)
 		envelope[1].append(index)
 		startIndex+=segmentLength
