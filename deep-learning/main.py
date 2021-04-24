@@ -8,28 +8,36 @@ import correlation_tools as ct
 
 
 DIR = '../data/our-data/for_training'
-#DIR = '../data/ff-em-sca-data/for_training/cable/100k_d1/100avg'
+#DIR = '../data/ff-em-sca-data/for_training/cable'
 
-byteOfInterest = 15
+byteOfInterest = 3
 
 def main():
 	while True:
-		inpt = input('1. Load data\n2. Generate model\n3. Train model\n4. Test model\n5. Evaluate model\n9. Exit\n')
+		inpt = input('1. Load data\n2. Generate model\n3. Train model\n4. Test model\n5. Evaluate model\n6. Plot\n9. Exit\n')
 		if inpt == '1':
 			folder = input("Where is the data located?")
-			traces, labels = load_data(DIR)
-			plt.plot(traces[12393])
+			traces, labels = load_data(DIR, norm=False, superNorm=True)
+			plt.plot(traces[2931])
 			plt.show()
 		elif inpt == '2':
 			model = create_attack_model()
 		elif inpt == '3':
 			try:
-				history_log = train_model(traces, tf.keras.utils.to_categorical(labels, num_classes=256), model, 300, 128, './models/byte' + str(byteOfInterest) + '/attack_model_byte' + str(byteOfInterest) + '-{epoch:01d}.h5')
+				history_log = train_model(traces, labels, model, 500, 128, './models/byte' + str(byteOfInterest) + '/attack_model_byte' + str(byteOfInterest) + '-{epoch:01d}.h5')
 				#history_log = train_model(traces[:, 1139:1249], tf.keras.utils.to_categorical(labels, num_classes=256), model, 100, 128, './attack_model.h5')
 				#history_log = train_model(traces[:, 130:240], tf.keras.utils.to_categorical(labels, num_classes=256), model, 100, 128, './models/byte' + str(byteOfInterest) + '/attack_model_byte' + str(byteOfInterest) + '-{epoch:01d}.h5')
 				# TODO: Plot history
 				print(history_log.history['val_accuracy'])
 				print(history_log.history['accuracy'])
+
+				train_acc = np.array(history_log.history['accuracy'])
+				val_acc = np.array(history_log.history['val_accuracy'])
+				loss = np.array(history_log.history['val_loss'])
+				
+				np.save('./models/byte' + str(byteOfInterest) + '/train_Acc.npy', train_acc)
+				np.save('./models/byte' + str(byteOfInterest) + '/val_Acc.npy', val_acc)
+				np.save('./models/byte' + str(byteOfInterest) + '/Loss.npy', loss)
 			except UnboundLocalError:
 				print("Generate model first.")
 			
@@ -38,6 +46,13 @@ def main():
 		elif inpt == '5':
 			modelNr = input("Which epoc do you want to evaluate?")
 			evaluate_model(traces, tf.keras.utils.to_categorical(labels, num_classes=256), 128, './models/byte' + str(byteOfInterest) + '/attack_model_byte' + str(byteOfInterest) + '-' + str(modelNr) + '.h5')
+
+		elif inpt == '6':
+			train_acc = np.load('./models/byte' + str(byteOfInterest) + '/train_Acc.npy')
+			val_acc = np.load('./models/byte' + str(byteOfInterest) + '/val_Acc.npy')
+			plt.plot(train_acc)
+			plt.plot(val_acc)
+			plt.show()
 
 		elif inpt == '9':
 			exit()
@@ -66,7 +81,7 @@ def train_model(input, labels, model, epochs, batch_size, file_name):
 		print("Error: model input shape length %d is not expected ..." % len(input_layer_shape))
 		exit()
 
-	history = model.fit(x=reshaped_input, y=labels, batch_size=batch_size, verbose=1, epochs=epochs, callbacks=callbacks, validation_split=0.1)
+	history = model.fit(x=reshaped_input, y=tf.keras.utils.to_categorical(labels, num_classes=256), batch_size=batch_size, verbose=1, epochs=epochs, callbacks=callbacks, validation_split=0.1)
 
 	return history
 
@@ -167,7 +182,7 @@ def create_attack_model(classes=256):
 	
 	model.add(tf.keras.layers.Flatten())
 	
-	#model.add(Dropout(0.2))
+	#model.add(tf.keras.layers.Dropout(0.2))
 	
 	model.add(tf.keras.layers.Dense(units = 200, activation = 'relu'))
 	model.add(tf.keras.layers.Dense(units = 200, activation = 'relu'))
@@ -179,29 +194,56 @@ def create_attack_model(classes=256):
 	
 	return model
 
-def load_data(folder, norm=True):
+def load_data(folder, norm=True, superNorm=False):
+	cutStart = 1142
+	cutStop = cutStart + 110
 	if norm:
 		j=0
-		traces = np.empty((300000, 110))
-		labels = np.empty(300000)
-		for i in range(1,4):
-			raw = np.memmap(folder + '/100k_d10_k' + str(i) + '_100avg/traces.npy', dtype='float32', mode='r', shape=(100000,4500))[:100000, 1137:1247]
+		traces = np.empty((500000, 110))
+		labels = np.empty(500000)
+		for i in range(1,6):
+			raw = np.memmap(folder + '/100k_d10_k' + str(i) + '_100avg/traces.npy', dtype='float32', mode='r', shape=(100000,4500))[:100000, cutStart:cutStop]
 			for trace in range(len(raw)):
 				traces[j] = ct.normMaxMin(raw[trace])
 				j+=1
 			labels[i*100000-100000:i*100000] =  np.load(folder + '/100k_d10_k' + str(i) + '_100avg/s1_label.npy')[:,byteOfInterest]
 			print(traces.shape)
 			print(labels.shape)
+
+	elif superNorm:
+		traces = np.empty((500000, 110))
+		labels = np.empty(500000)
+		globalMax = None
+		globalMin = None
+
+		for i in range(1,6):
+			raw = np.memmap(folder + '/100k_d10_k' + str(i) + '_100avg/traces.npy', dtype='float32', mode='r', shape=(100000,4500))
+			localMin = np.min(raw)
+			localMax = np.max(raw)
+			if globalMax == None or localMax > globalMax:
+				globalMax = localMax
+			if globalMin == None or localMin < globalMin:
+				globalMin = localMin
+			traces[i*100000-100000:i*100000] = raw[:100000, cutStart:cutStop]
+			labels[i*100000-100000:i*100000] =  np.load(folder + '/100k_d10_k' + str(i) + '_100avg/s1_label.npy')[:,byteOfInterest]
+			print(traces.shape)
+			print(labels.shape)
+
+		traces[:] = (traces - globalMin) / (globalMax - globalMin)
+
 	else:
-		traces = np.memmap(folder + '/traces.npy', dtype='float32', mode='r', shape=(100000,4500))[:100000, 1137:1247]
+		traces = np.memmap(folder + '/traces.npy', dtype='float32', mode='r', shape=(100000,4500))[:100000, cutStart:cutStop]
 		traces = traces.reshape(110, len(traces)) # Transpose
 	
+	# traces = np.empty((500000, 110))
+	# labels = np.empty(500000)
+	# for i in range(1,6):
+	# 	traces[i*100000-100000:i*100000] = np.load(folder + '/100k_d' + str(i) + '/100avg/nor_traces_maxmin.npy')[:, 120:230]
+	# 	labels[i*100000-100000:i*100000] = np.load(folder + '/100k_d' + str(i) + '/100avg/s1_label.npy')[:,byteOfInterest]
 	
-	#labels = labels.astype('int32')
-	#traces = np.load(DIR + '/nor_traces_maxmin.npy')[:, 130:240]
-	#labels = np.load(DIR + '/label_0.npy')
+	# 	print(traces.shape)
+	# 	print(labels.shape)
 	
-
 	return traces, labels
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 from aes import *
 import numpy as np
-DIR = '../data/our-data/for_training/100k_d10_k5_100avg'
-#DIR = '../data/ff-em-sca-data/for_training/cable/100k_d1/100avg'
+#DIR = '../data/our-data/for_training/100k_d10_k5_100avg'
+DIR = '../data/ff-em-sca-data/for_training/cable/100k_d4/100avg'
 
 def main():
 	key = np.load(DIR + '/key.npy')

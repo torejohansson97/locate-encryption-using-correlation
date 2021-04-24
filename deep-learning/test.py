@@ -13,9 +13,9 @@ sys.path.append('../correlation')
 import correlation_tools as ct
 
 DIR = '../data/our-data/for_training/100k_d10_k5_100avg'
-#DIR = '../data/ff-em-sca-data/for_training/cable/100k_d1/100avg'
-byteOfInterest = 6
-epoch = 50
+#DIR = '../data/ff-em-sca-data/for_testing/3m/10k_d6/100avg'
+byteOfInterest = 3
+epoch = 98
 
 AES_Sbox = np.array([
 	0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -108,9 +108,9 @@ def probability_cal(selected_Pts_interest, selected_predictions, NUMBER):
 		probabilities = np.zeros(256)
 
 		for j in range(256):
-			#value = AES_Sbox[selected_Pts_interest[i] ^ j]
+			value = AES_Sbox[selected_Pts_interest[i] ^ j]
 			#value = selected_Pts_interest[i] ^ j
-			value = Inv_Sbox[selected_Pts_interest[i] ^ j]			
+			#value = Inv_Sbox[selected_Pts_interest[i] ^ j]			
 			
 			probabilities[j] = selected_predictions[i][value]
 
@@ -173,15 +173,15 @@ if __name__ == "__main__":
 	#cut = 60000
 	#stop = 63000
 	# load traces and cut
-	raw = np.memmap(DIR + '/traces.npy', dtype='float32', mode='r', shape=(100000,4500))[:, 1139:1249]
+	raw = np.memmap(DIR + '/traces.npy', dtype='float32', mode='r', shape=(100000,4500))[:, 1142:1252]
 	Traces = np.zeros((100000, 110))
 	for trace in range(len(raw)):
 		Traces[trace] = ct.normMaxMin(raw[trace])
 
-	# Traces = np.load(DIR + '/nor_traces_maxmin.npy')[:,130:240]
+	#Traces = np.load(DIR + '/nor_traces_maxmin.npy')[:,120:230]
 	#Traces = Traces[cut:stop]
 
-	plt.plot(Traces[12393])
+	plt.plot(Traces[500])
 	plt.show()
 	
 	#plt.plot(Traces[0])
@@ -196,7 +196,7 @@ if __name__ == "__main__":
 	#Pts = Pts[cut:stop]
 
 	# choose interest key byte and pt byte
-	interest_byte = byteOfInterest
+	interest_byte = 0
 	key_interest = key[interest_byte]
 	Pts_interest = Pts[:, interest_byte]
 
@@ -213,7 +213,7 @@ if __name__ == "__main__":
 
 	# randomly select trace for testing
 
-	NUMBER = 3000
+	NUMBER = 500
 
 
 	average = 100
@@ -239,13 +239,13 @@ if __name__ == "__main__":
 
 	ranks_array = np.array(ranks_array)
 
-	print(np.argmax(np.sum(sum_prob_array, axis=0)))
-	print(key_interest)
+	print("Guessed key: " + str(np.argmax(np.sum(sum_prob_array, axis=0))))
+	print("Acctual key: " + str(key_interest))
 
 	
 	for i in range(ranks_array.shape[1]):
 
-		if np.count_nonzero(ranks_array[:, i]) < int(average / 2):
+		if np.sum(ranks_array[:, i]) < int(average / 2):
 		
 			print(i)
 			break
