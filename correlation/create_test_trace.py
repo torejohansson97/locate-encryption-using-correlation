@@ -1,11 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io.wavfile import read
-
-def normMaxMin(inputArray):
-	max = np.max(inputArray)
-	min = np.min(inputArray)
-	return np.array([(x - min) / (max - min) for x in inputArray])
+import correlation_tools as ct
 
 def soundNoise(filename):
 	sound = read(filename)
@@ -25,26 +21,27 @@ def insertTraceAverage(trace, testTrace, offset):
 		testTrace[i+offset] = (trace[i]+testTrace[i+offset])/2
 	return testTrace
 
-def addSamples(trace1, trace2):
-	for i in range(len(trace1)):
-		trace2[i] += trace1[i]
-	return trace2
-
 def main():
-	sNoise = soundNoise('../data/baloobas.wav')
-	wNoise = whiteNoise(len(sNoise))
-	testTrace = addSamples(wNoise, sNoise)
+	#sNoise = soundNoise('../data/baloobas.wav')
+	traceName = 'traces_cable'
+	traceShape = (1,1261568*50)
+	originalTrace = np.memmap('../data/our-data/for_testing/long_traces/with_setup/'+traceName+'.npy', dtype='float32', mode='r', shape=traceShape)[:].copy()
+	wNoise = whiteNoise(1261568*50, 0, np.std(originalTrace))
+	testTrace = np.add(originalTrace, wNoise)
 	#testTrace_scaled = normMaxMin(testTrace)
 
-	trace = np.load('../data/ff-em-sca-data/for_testing/3m/10k_d6/1avg/nor_traces_maxmin.npy')[0]
-	trace2 = np.load('../data/ff-em-sca-data/for_testing/3m/10k_d6/1avg/nor_traces_maxmin.npy')[100]
+	#trace = np.load('../data/ff-em-sca-data/for_testing/3m/10k_d6/1avg/nor_traces_maxmin.npy')[0]
+	#trace2 = np.load('../data/ff-em-sca-data/for_testing/3m/10k_d6/1avg/nor_traces_maxmin.npy')[100]
 
-	final = insertTrace(trace, testTrace, 100000)
-	final = insertTrace(trace2, final, 350000)
+	#final = insertTrace(trace, testTrace, 100000)
+	#final = insertTrace(trace2, final, 350000)
 
-	finalmaxmin = normMaxMin(final)
-	np.save('test_trace.npy', finalmaxmin)
-	plt.plot(finalmaxmin[99000:101000])
+	#testTrace = ct.normMaxMin(testTrace)
+	output = np.memmap('../data/our-data/for_testing/long_traces/with_setup/'+traceName+'_noisy.npy', dtype='float32', mode='w+', shape=traceShape)
+	output[0] = testTrace
+	#np.save('test_trace.npy', finalmaxmin)
+	plt.plot(output[0])
+	output.flush()
 	plt.show()
 
 
