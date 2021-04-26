@@ -55,7 +55,7 @@ def attackTest():
 
 
 def templateTest():
-    normalizeEnvelope = True
+    normalizeEnvelope = False
     addNoise = True
     #arrayCut = 2500
     template, templateName = chooseTemplate('../data/our-data/templates')
@@ -73,10 +73,11 @@ def templateTest():
     stdNoise = 0.003
     print('stdNoise = '+ str(stdNoise))
     if addNoise:
-        plt.plot(traceArray+0.025)
+        #plt.plot(traceArray+0.025)
+        templateName+='_n'
         traceArray = np.add(traceArray, whiteNoise(130000, 0, stdNoise))
-        plt.plot(traceArray)
-        plt.show()
+        #plt.plot(traceArray)
+        #plt.show()
     tct.plotEnvelopeWithTrigger(traceArray, template, normalizeEnvelope)
     #trigMultiplier = 10
     trigMultiplier = intInput('Enter value for trigger multiplier: ',1,10000000)
@@ -182,15 +183,15 @@ def generateLineFromStats(templateName, foundTraces, totalTraces, meanCorr, std,
         if temp.is_integer():
             temp = int(temp)
         totalTraces = str(temp) + 'K'
-    line = (centerInString(templateName.strip('.npy'), 19) + ' ' +
-            centerInString(str(foundTraces), 10) + ' ' +
-            centerInString(str(percentage), 8) + ' ' +
-            centerInString(str(totalTraces), 8) + ' ' +
-            centerInString(str(round(meanCorr,4)), 8) + ' ' +
-            centerInString(str(round(std,4)), 10) + ' ' +
-            centerInString(str(trigMult), 7) + ' ' +
-            centerInString(str(round(avgPeakVal,4)), 11) + ' ' +
-            centerInString(str(round(peakVariance,5)), 10) + '|\n')
+    line = (centerInString(templateName.strip('.npy'), 19) + ';' +
+            centerInString(str(foundTraces), 10) + ';' +
+            centerInString(str(percentage), 8) + ';' +
+            centerInString(str(totalTraces), 8) + ';' +
+            centerInString(str(round(meanCorr,4)), 8) + ';' +
+            centerInString(str(round(std,4)), 10) + ';' +
+            centerInString(str(trigMult), 7) + ';' +
+            centerInString(str(round(avgPeakVal,4)), 11) + ';' +
+            centerInString(str(round(peakVariance,5)), 10) + '\n')
     return line
 
 def centerInString(text, strLength):
