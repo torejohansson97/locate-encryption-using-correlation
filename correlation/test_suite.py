@@ -55,6 +55,8 @@ def attackTest():
 
 
 def templateTest():
+    normalizeEnvelope = True
+    addNoise = True
     #arrayCut = 2500
     template, templateName = chooseTemplate('../data/our-data/templates')
     #test_set = np.load('../data/test2/k2/traces.npy')[:,arrayCut:]
@@ -65,9 +67,17 @@ def templateTest():
     totalTraces = tracesPerRow*rowsPerKey*keyFolders
     #plt.plot(test_set[0])
     #plt.show()
-    #arrayCut = 400000
-    arrayCut = intInput('Enter number of samples to cut in beginning: ',0, test_set.shape[1]-(len(template)*2))
-    tct.plotEnvelopeWithTrigger(test_set[0, arrayCut:], template)
+    arrayCut = 0
+    #arrayCut = intInput('Enter number of samples to cut in beginning: ',0, test_set.shape[1]-(len(template)*2))
+    traceArray = test_set[0,arrayCut:]
+    stdNoise = 0.003
+    print('stdNoise = '+ str(stdNoise))
+    if addNoise:
+        plt.plot(traceArray+0.025)
+        traceArray = np.add(traceArray, whiteNoise(130000, 0, stdNoise))
+        plt.plot(traceArray)
+        plt.show()
+    tct.plotEnvelopeWithTrigger(traceArray, template, normalizeEnvelope)
     #trigMultiplier = 10
     trigMultiplier = intInput('Enter value for trigger multiplier: ',1,10000000)
 
@@ -82,9 +92,11 @@ def templateTest():
         for i in range(rowsPerKey):
             print('Current trace: '+str((i*tracesPerRow)+(key-1)*rowsPerKey*tracesPerRow)+'/'+str(totalTraces), end='\r')
             traceArray = test_set[i,arrayCut:]
+            if addNoise:
+                traceArray = np.add(traceArray, whiteNoise(130000, 0, stdNoise))
 
             corr = tct.getCorrelation(traceArray, template, True)
-            corrEnvelopeList = tct.getCorrEnvelopeList(corr, True, traceArray)
+            corrEnvelopeList = tct.getCorrEnvelopeList(corr, normalizeEnvelope, traceArray)
             numIndices, peakMean, peakVariance, meanCorr, std = tct.getTraceStatsFromEnvelope(corr, corrEnvelopeList, 800, trigMultiplier)
             foundTraces.append(numIndices)
             if numIndices > 10:
@@ -189,6 +201,9 @@ def centerInString(text, strLength):
         temp = (' '*startIndex) + text
         return temp + (' '*(strLength-len(temp)))
     return text
+
+def whiteNoise(length, mean = 0, std = 1):
+	return np.random.normal(mean, std, size=length)
 
 if __name__ == "__main__":
     userInput = input('Vilket test vill du göra, template (t), filter (f) eller attack (a)?')[0]

@@ -152,11 +152,11 @@ def getCorrelation(trace, template, norm=True):
 		corr = normMaxMin(corr)
 	return corr
 
-def plotEnvelopeWithTrigger(traceArray, template):
+def plotEnvelopeWithTrigger(traceArray, template, normalize=False):
 	corr = getCorrelation(traceArray, template)
 	meanCorr = np.mean(corr)
 	std = np.std(corr)
-	envelope = getCorrEnvelopeList(corr, True, traceArray)[0]
+	envelope = getCorrEnvelopeList(corr, normalize, traceArray)[0]
 	#plotFrequencies(envelope)
 	triggerLevel1 = [meanCorr + (std*5)]*len(envelope)
 	triggerLevel2 = [meanCorr + (std*10)]*len(envelope)
