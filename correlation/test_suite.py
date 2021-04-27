@@ -59,6 +59,7 @@ def templateTest():
     addNoise = True
     #arrayCut = 2500
     template, templateName = chooseTemplate('../data/our-data/templates')
+    templateName = templateName.strip('.npy')
     #test_set = np.load('../data/test2/k2/traces.npy')[:,arrayCut:]
     test_set = np.memmap(f'../data/our-data/for_testing/10k_d10_k{1}_1avg_10rep/traces.npy', dtype='float32', mode='r', shape=(10000,130000))
     tracesPerRow = 10
@@ -79,7 +80,7 @@ def templateTest():
         #plt.plot(traceArray)
         #plt.show()
     tct.plotEnvelopeWithTrigger(traceArray, template, normalizeEnvelope)
-    #trigMultiplier = 10
+    #trigMultiplier = 6
     trigMultiplier = intInput('Enter value for trigger multiplier: ',1,10000000)
 
     foundTraces = []
@@ -100,8 +101,8 @@ def templateTest():
             corrEnvelopeList = tct.getCorrEnvelopeList(corr, normalizeEnvelope, traceArray)
             numIndices, peakMean, peakVariance, meanCorr, std = tct.getTraceStatsFromEnvelope(corr, corrEnvelopeList, 800, trigMultiplier)
             foundTraces.append(numIndices)
-            if numIndices > 10:
-                tct.plotEnvelopeWithTrigger(traceArray, template)
+            #if numIndices > 10:
+            #    tct.plotEnvelopeWithTrigger(traceArray, template)
             if peakMean != None:
                 peakMeanList.append(peakMean)
                 peakVarList.append(peakVariance)
@@ -142,8 +143,10 @@ def intInput(question, min=1, max=100):
         try:
             strInput = input(question)
             value = int(strInput)
-            if value in range(min,max+1):
+            if value > min and value <= max:
                 break
+        except ValueError:
+            exit()
         except:
             pass
         print('Invalid input!')
@@ -183,7 +186,7 @@ def generateLineFromStats(templateName, foundTraces, totalTraces, meanCorr, std,
         if temp.is_integer():
             temp = int(temp)
         totalTraces = str(temp) + 'K'
-    line = (centerInString(templateName.strip('.npy'), 19) + ';' +
+    line = (centerInString(templateName, 19) + ';' +
             centerInString(str(foundTraces), 10) + ';' +
             centerInString(str(percentage), 8) + ';' +
             centerInString(str(totalTraces), 8) + ';' +
