@@ -161,11 +161,15 @@ def plotEnvelopeWithTrigger(traceArray, template, normalize=False):
 	triggerLevel1 = [meanCorr + (std*5)]*len(envelope)
 	triggerLevel2 = [meanCorr + (std*10)]*len(envelope)
 	triggerLevel3 = [meanCorr + (std*15)]*len(envelope)
+	plt.rcParams["figure.figsize"] = (8,3)
+	plt.gcf().subplots_adjust(bottom=0.15)
 	plt.plot(envelope, label='Envelope')
 	plt.plot(triggerLevel3, label='triggerMultiplier = 15')
 	plt.plot(triggerLevel2, label='triggerMultiplier = 10')
 	plt.plot(triggerLevel1, label='triggerMultiplier = 5')
-	plt.legend(loc="upper left")
+	plt.xlabel('Segment number')
+	plt.ylabel('Amplitude')
+	plt.legend(loc="upper right")
 	plt.show()
 
 def plotFrequencies(array):

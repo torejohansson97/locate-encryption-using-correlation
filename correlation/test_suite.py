@@ -26,15 +26,31 @@ def filterTest():
     tct.plotEnvelopeWithTrigger(test_trace[0], template)
 
 def attackTest():
+    traceName = 'traces_antenna'
+    addNoise = False
+    normalizeEnvelope = True
+
     template, templateName = chooseTemplate('../data/our-data/templates')
-    traces = np.memmap('../data/our-data/for_testing/long_traces/with_setup/traces_antenna.npy', dtype='float32', mode='r', shape=(50,1261568))
+    traces = np.memmap(f'../data/our-data/for_testing/long_traces/with_setup/{traceName}.npy', dtype='float32', mode='r', shape=(50,1261568))
     rows = len(traces)
     tracesPerRow = 50
     totalTraces = tracesPerRow*rows
-    #plt.plot(test_set[0])
-    #plt.show()
-    #arrayCut = 400000
-    tct.plotEnvelopeWithTrigger(traces[3,:], template)
+    traceArray = traces[3,:]
+    plt.rcParams["figure.figsize"] = (8,3)
+    plt.gcf().subplots_adjust(bottom=0.15)
+    plt.plot(traceArray)
+    plt.xlabel('Sample number')
+    plt.ylabel('Amplitude')
+    plt.show()
+    #stdNoise = np.std(traceArray)
+    stdNoise = 0.003
+    print('stdNoise = '+ str(stdNoise))
+    if addNoise:
+        #plt.plot(traceArray+0.025)
+        traceArray = np.add(traceArray, whiteNoise(1261568, 0, stdNoise))
+        #plt.plot(traceArray)
+        #plt.show()
+    tct.plotEnvelopeWithTrigger(traceArray, template, normalizeEnvelope)
     #trigMultiplier = 10
     trigMultiplier = intInput('Enter value for trigger multiplier: ')
 
@@ -43,8 +59,10 @@ def attackTest():
     for i in range(rows):
         print('Current trace: '+str(i*tracesPerRow)+'/'+str(totalTraces), end='\r')
         traceArray = traces[i,:]
+        if addNoise:
+            traceArray = np.add(traceArray, whiteNoise(1261568, 0, stdNoise))
 
-        encryptionBlocks = tct.getEncryptionBlocksFromArray(traceArray, template, 0, trigMultiplier, True)
+        encryptionBlocks = tct.getEncryptionBlocksFromArray(traceArray, template, 0, trigMultiplier, normalizeEnvelope)
         print(len(encryptionBlocks))
         foundTraces.append(len(encryptionBlocks))
         blocks = np.append(blocks, encryptionBlocks, axis=0)
@@ -143,7 +161,7 @@ def intInput(question, min=1, max=100):
         try:
             strInput = input(question)
             value = int(strInput)
-            if value > min and value <= max:
+            if value >= min and value <= max:
                 break
         except ValueError:
             exit()
