@@ -67,7 +67,9 @@ def main():
 				recorder.blocks_file_sink_0.close()
 				raw = np.fromfile(outputfile, dtype='float32')[-120000:]
 				encryptionBlock = ct.getEncryptionBlockFromArray(raw, template)
-				if encryptionBlock.shape[0] != 2:
+				# If we find less than expected, something went wrong so we plot the result.
+				# We then try again.
+				if encryptionBlock.shape[0] != repetion:
 					print("Hittade " + str(encryptionBlock.shape[0]) + ' block')
 					plt.ion()
 					plt.show()
@@ -83,11 +85,6 @@ def main():
 					plt.pause(10)
 					plt.close()
 					losttraces+=1
-					# for i in encryptionBlock:
-					#     plt.plot(i)
-					#     plt.draw()
-					#     plt.pause(5)
-					#     plt.close()
 				else:
 					encryptionBlock = encryptionBlock[0]
 					encryptionBlock = encryptionBlock.reshape(1, len(encryptionBlock)) # Transpose
@@ -98,9 +95,6 @@ def main():
 						
 					traces[traceNumber-1, :] = encryptionBlock
 					break
-			
-			
-
 		print('Time: ' + str(time.perf_counter() - start) + 'Lost traces: ' + str(losttraces))
 		
 	traces.flush() # Save to disk

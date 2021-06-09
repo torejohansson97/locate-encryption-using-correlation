@@ -53,18 +53,21 @@ def main():
 			while True:
 				os.remove(outputfile)
 				recorder.blocks_file_sink_0.open(outputfile)
-				time.sleep(0.005)
+				time.sleep(0.005) # Make sure SDR is ready before encryption starts.
 				target.runEncryption()
 				recorder.blocks_file_sink_0.close()
 
 				raw = np.fromfile(outputfile, dtype='float32')
-				# plt.plot(raw)
-				# plt.show()
 				try:
+					# Use our correlation method to extract encrytionblocks from
+					# the trace.
 					encryptionBlock = ct.getEncryptionBlockFromArray(raw, template, 200, 9)
 
 					if encryptionBlock.shape[0] == repetiotion:
-						encryptionBlock = encryptionBlock[5:105] # Take the 100 middle block, do this to avoid having delays before and after encryption.
+						# Take the 100 middle block. Do this to avoid the need of
+						# having delays before and after encryption start and to 
+						# prevent loss of encryption blocks due to timing errors.
+						encryptionBlock = encryptionBlock[5:105] 
 						avg100 = np.average(encryptionBlock, axis=0) # Average
 						avg100 = avg100.reshape(1, len(avg100)) # Transpose
 						

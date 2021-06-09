@@ -40,7 +40,7 @@ class TargetDevice:
 		self.__device.readline()  
 		
 	def setKey(self, key):
-		# Assumes i tinyAES mode
+		# Assumes in tinyAES mode
 		#print("Set key")
 		command_line = '%s%s\r' % ('k', " ".join(str(char) for char in key))
 		self.__device.write(command_line.encode())
@@ -48,7 +48,7 @@ class TargetDevice:
 		self.__device.readline()
 
 	def setPlainText(self, text):
-		# Assumes i tinyAES mode
+		# Assumes in tinyAES mode
 		#print("\nSet PT")
 		command_line = '%s%s\r' % ('p', " ".join(str(char) for char in text))
 		self.__device.write(command_line.encode())

@@ -53,7 +53,7 @@ def main():
 			
 			time.sleep(0.01)
 			recorder.blocks_file_sink_0.close()
-			raw = np.fromfile(outputfile, dtype='float32')[-130000:] # Cut the crap
+			raw = np.fromfile(outputfile, dtype='float32')[-130000:] # Cut the crap from 0.06s sleep
 			
 			raw = raw.reshape(1, len(raw)) # Transpose
 			
