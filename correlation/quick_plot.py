@@ -6,14 +6,11 @@ plt.rcParams["figure.figsize"] = (8,3)
 plt.gcf().subplots_adjust(left=0.08, right=0.98, bottom=0.15)
 
 
-trace = np.memmap('../data/our-data/for_testing/long_traces/with_setup/traces_cable.npy', dtype='float32', mode='r', shape=(50,1261568))
-#trace = np.memmap('../data/our-data/for_testing/long_traces/with_setup/traces_antenna.npy', dtype='float32', mode='r', shape=(1,1261568*50))
+trace = np.memmap('../data/our-data/for_template/100k_d10_k50_1avg_1rep/traces.npy', dtype='float32', mode='r', shape=(100000,4500))
 template = np.load('../data/our-data/templates/avg100_firstround.npy')
 
-#tct.plotEnvelopeWithTrigger(trace[0,:], template)
-#corr = tct.getCorrelation(trace[0,:], template)
 plt.figure(1)
-plt.plot(template)
+plt.plot(trace)
 plt.xlabel('Sample number')
 plt.ylabel('Amplitude')
 plt.show()
