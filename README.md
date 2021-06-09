@@ -15,3 +15,7 @@ used as a basis for the scripts in 'capture'.
 
 ## Report
 For more details, read our corresponding report named 'Using Correlation Analysis to Locate Encryption Activity in Electromagnetic Side-Channels' which can be found in KTH's publication database DiVA (https://kth.diva-portal.org/).
+
+## Creators
+Tore Johansson
+Simon Weideskog
