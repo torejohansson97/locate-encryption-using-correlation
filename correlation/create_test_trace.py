@@ -3,19 +3,24 @@ import matplotlib.pyplot as plt
 from scipy.io.wavfile import read
 import correlation_tools as ct
 
+# Returns an array conatining the data from filename. The file is intended
+# to be an audio track.
 def soundNoise(filename):
 	sound = read(filename)
 	array = np.array(sound[1],dtype=float)
 	return normMaxMin(array)
 
+# Returns array with white noise of length length. 
 def whiteNoise(length, mean = 0, std = 1):
 	return np.random.normal(mean, std, size=length)
 
+# Additive combination of two traces, returns an array with the traces combined.
 def insertTrace(trace, bigTrace, offset):
 	for i in range(len(trace)):
 		bigTrace[i+offset] = trace[i]+bigTrace[i+offset]
 	return bigTrace
 
+# Additive combination of the avreage of two traces, returns an array with the result.
 def insertTraceAverage(trace, testTrace, offset):
 	for i in range(len(trace)):
 		testTrace[i+offset] = (trace[i]+testTrace[i+offset])/2
