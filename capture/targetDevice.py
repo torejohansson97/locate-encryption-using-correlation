@@ -1,4 +1,7 @@
 import serial
+# TargetDevice defines a class that handles the communication with the target 
+# device via serial. The target device must be running the firmware supplied by
+# screaminchannels.
 
 class TargetDevice:
 	def __init__(self, port):

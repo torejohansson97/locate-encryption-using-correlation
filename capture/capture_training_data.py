@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# This script is used to capture the data in training_data folder
+
 import sys, getopt
 import os
 import serial
