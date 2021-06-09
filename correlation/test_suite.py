@@ -1,31 +1,19 @@
+# Simon Weideskog and Tore Johansson
+# Last edited: 2021-06-09
+"""
+Script for testing templates performance compared to each together
+in different scenarios.
+"""
+
 import correlation_tools as tct
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-def filterTest():
-    createTemplateFile()
-    template, test_trace = loadData()
-
-    foundTraces = []
-    avg_traces = np.empty((len(test_trace),400))
-    arrayCut = 200000
-
-    for i in range(len(test_trace)):
-        traceArray = test_trace[i,arrayCut:]
-        #traces = tct.getTracesFromArray(traceArray, template)
-        traces = tct.getEncryptionBlockFromArray(traceArray, template)
-        foundTraces.append(len(traces))
-        #avg_traces[i] = tct.normMaxMin(tct.average(traces))
-    print('Hittade traces: ' + str(foundTraces))
-
-    plt.figure(10)
-    plt.plot(traces[0])
-    #plt.plot(avg_traces[9])
-
-    tct.plotEnvelopeWithTrigger(test_trace[0], template)
-
 def attackTest():
+    """
+    Function for testing attack on noisy traces.
+    """
     traceName = 'traces_antenna'
     addNoise = False
     normalizeEnvelope = True
@@ -51,7 +39,6 @@ def attackTest():
         #plt.plot(traceArray)
         #plt.show()
     tct.plotEnvelopeWithTrigger(traceArray, template, normalizeEnvelope)
-    #trigMultiplier = 10
     trigMultiplier = intInput('Enter value for trigger multiplier: ')
 
     foundTraces = []
@@ -63,7 +50,6 @@ def attackTest():
             traceArray = np.add(traceArray, whiteNoise(1261568, 0, stdNoise))
 
         encryptionBlocks = tct.getEncryptionBlocksFromArray(traceArray, template, 0, trigMultiplier, normalizeEnvelope)
-        print(len(encryptionBlocks))
         foundTraces.append(len(encryptionBlocks))
         blocks = np.append(blocks, encryptionBlocks, axis=0)
     print('\a')
@@ -73,19 +59,18 @@ def attackTest():
 
 
 def templateTest():
+    """
+    Function for testing performance of different templates.
+    """
     normalizeEnvelope = False
     addNoise = True
-    #arrayCut = 2500
     template, templateName = chooseTemplate('../data/our-data/templates')
     templateName = templateName.strip('.npy')
-    #test_set = np.load('../data/test2/k2/traces.npy')[:,arrayCut:]
     test_set = np.memmap(f'../data/our-data/for_testing/10k_d10_k{1}_1avg_10rep/traces.npy', dtype='float32', mode='r', shape=(10000,130000))
     tracesPerRow = 10
-    rowsPerKey = len(test_set)
-    keyFolders = 5 #/5
+    rowsPerKey = 5 #len(test_set)
+    keyFolders = 2 #/5
     totalTraces = tracesPerRow*rowsPerKey*keyFolders
-    #plt.plot(test_set[0])
-    #plt.show()
     arrayCut = 0
     #arrayCut = intInput('Enter number of samples to cut in beginning: ',0, test_set.shape[1]-(len(template)*2))
     traceArray = test_set[0,arrayCut:]
@@ -98,7 +83,6 @@ def templateTest():
         #plt.plot(traceArray)
         #plt.show()
     tct.plotEnvelopeWithTrigger(traceArray, template, normalizeEnvelope)
-    #trigMultiplier = 6
     trigMultiplier = intInput('Enter value for trigger multiplier: ',1,10000000)
 
     foundTraces = []
@@ -117,9 +101,9 @@ def templateTest():
 
             corr = tct.getCorrelation(traceArray, template, True)
             corrEnvelopeList = tct.getCorrEnvelopeList(corr, normalizeEnvelope, traceArray)
-            numIndices, peakMean, peakVariance, meanCorr, std = tct.getTraceStatsFromEnvelope(corr, corrEnvelopeList, 800, trigMultiplier)
+            numIndices, peakMean, peakVariance, meanCorr, std = tct.getBlockStatsFromEnvelope(corr, corrEnvelopeList, 800, trigMultiplier)
             foundTraces.append(numIndices)
-            #if numIndices > 10:
+            #if numIndices > 10: # Useful for finding errors in data set
             #    tct.plotEnvelopeWithTrigger(traceArray, template)
             if peakMean != None:
                 peakMeanList.append(peakMean)
@@ -139,6 +123,9 @@ def templateTest():
 
 
 def chooseTemplate(templatesPath):
+    """
+    Letting the user choose which template to use from the specified directory.
+    """
     templates = []
     i = 0
     for subdir, dirs, files in os.walk(templatesPath):
@@ -157,6 +144,9 @@ def chooseTemplate(templatesPath):
     return np.load(filepath), name
 
 def intInput(question, min=1, max=100):
+    """
+    Only accepts correct integer input to avoid crashing.
+    """
     while True:
         try:
             strInput = input(question)
@@ -229,9 +219,7 @@ def whiteNoise(length, mean = 0, std = 1):
 
 if __name__ == "__main__":
     userInput = input('Vilket test vill du göra, template (t), filter (f) eller attack (a)?')[0]
-    if userInput == 'f':
-        filterTest()
-    elif userInput == 't':
+    if userInput == 't':
         templateTest()
     elif userInput == 'a':
         attackTest()

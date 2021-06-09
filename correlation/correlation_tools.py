@@ -1,5 +1,7 @@
+# Simon Weideskog and Tore Johansson
+# Last edited: 2021-06-09
 """
-Module with useful functions for trace identification using correlation.
+Module with useful functions for locating encryption blocks using correlation.
 Test code is in test_suite.py!
 """
 import numpy as np
@@ -7,35 +9,53 @@ from scipy import signal, fftpack
 import os
 import matplotlib.pyplot as plt
 
-TEMPLATE_LENGTH = 4100
-
-def getTracesFromArray(traceArray, template):
-	corr = getCorrelation(traceArray, template, True)
-	corrEnvelopeList = getCorrEnvelopeList(corr, False)
-	indices = getTraceIndicesFromEnvelope(corr, corrEnvelopeList, 800)
-	return cutTracesWithIndices(traceArray, indices)
+"""
+Following constants depends on encryption implementation
+and need to be adjusted for different kinds of targets.
+"""
+BLOCK_LENGTH = 4100
+ROUND_LENGTH = 400
+FIRSTROUND_START = 800
+LASTROUND_START = 3720
 
 def getEncryptionBlocksFromArray(traceArray, template, padding=200, triggerMultiplier=10, normalize=True):
+	"""
+	Returns an array with all found encryption blocks in a recorded trace (traceArray).
+	The template for correlation, padding around the outputted blocks and the
+	chosen trigger multiplier must be provided for this function.
+
+	The function 'plotEnvelopeWithTrigger' can be called before this function
+	in order to chose trigger multiplier visually.
+	"""
 	corr = getCorrelation(traceArray, template, True)
 	corrEnvelopeList = getCorrEnvelopeList(corr, normalize, traceArray)
-	indices = getTraceIndicesFromEnvelope(corr, corrEnvelopeList, 0, triggerMultiplier)
+	indices = getBlockIndicesFromEnvelope(corr, corrEnvelopeList, 0, triggerMultiplier)
 	return cutEncryptionBlocks(traceArray, indices, padding)
 
 def average(traces):
-	return np.mean(traces, axis=0)	# all the traces to one
-
-def averageOfOne(trace, startIndex):
-	return trace[startIndex:startIndex+TEMPLATE_LENGTH]
+	"""
+	Combining all traces from the 2-dimensional input array
+	into an average trace, sample by sample.
+	"""
+	return np.mean(traces, axis=0)
 
 def normMaxMin(inputArray):
+	"""
+	Implementation of the min-max normalization. Returns normalized version of
+	the input array.
+	"""
 	tempArray = np.array(inputArray.copy())
 	max = np.max(tempArray)
 	min = np.min(tempArray)
 	tempArray[:] = (tempArray - min) / (max - min)
 	return tempArray
 
-def getTraceIndicesFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10):
-	#print('Getting indexes of correlations peaks...')
+def getBlockIndicesFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10):
+	"""
+	Returns indices of where encryption blocks are located, based on the
+	envelope list and the chosen trigger multiplier (here multiplied with the
+	standard deviation of the correlation array).
+	"""
 	meanCorr = np.mean(corr)
 	std = np.std(corr)
 	triggerLevel = meanCorr + (std*triggerMultiplier)
@@ -46,8 +66,11 @@ def getTraceIndicesFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10
 			indices.append(envelopeList[1][i]+offset)
 	return indices
 
-def getTraceStatsFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10):
-	#print('Getting indexes of correlations peaks...')
+def getBlockStatsFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10):
+	"""
+	Returns statistics of found encryption blocks
+	instead of indices. Used for testing.
+	"""
 	meanCorr = np.mean(corr)
 	std = np.std(corr)
 	triggerLevel = meanCorr + (std*triggerMultiplier)
@@ -66,7 +89,13 @@ def getTraceStatsFromEnvelope(corr, envelopeList, offset, triggerMultiplier=10):
 	return numIndices, peakMean, peakVariance, meanCorr, std
 
 def getCorrEnvelopeList(corr, normalize, trace=[], segmentLength=600, longSegment=8000):
-	#print('Saving max amplitudes in segments and their indices to envelope list... (Segment length: ' +str(segmentLength)+')')
+	"""
+	Returns envelope array based on segments of the correlation array
+	with both maximum value within segment and indices of the maximum values.
+
+	Can also perform normalization if 'normalize' is set to True.
+	See report for details.
+	"""
 	envelope = [[],[]]
 	traceMaxAbs = np.max(np.abs(trace))
 	startIndex = 0
@@ -99,60 +128,39 @@ def getCorrEnvelopeList(corr, normalize, trace=[], segmentLength=600, longSegmen
 		startIndex+=segmentLength
 	return envelope
 
-def getCorrEnvelope(corr, segmentLength=400):
-	envelope = np.empty((2,corr.shape[0]))
-	startIndex = 0
-	stop = segmentLength
-	length = len(corr)
-	while startIndex < length and stop == segmentLength:
-		if startIndex + segmentLength > length:
-			index = startIndex + np.argmax(corr[startIndex:len(corr)])
-			biggest = corr[index]
-			stop = length - 1 - startIndex
-		else:
-			index = startIndex + np.argmax(corr[startIndex:startIndex+segmentLength])
-			biggest = corr[index]
-		#envelope[startIndex:startIndex+stop]=np.linspace(envelope[startIndex-1],biggest, num=stop)
-		envelope[0][startIndex:startIndex+stop]=np.array(([biggest]*stop))
-		envelope[1][startIndex:startIndex+stop]=np.array(([index]*stop))
-		startIndex+=segmentLength
-	return envelope
-
-def cutTracesWithIndices(traceArray, indices):
-	#print('Splitting array into traces...')
-	traces = np.empty((0,400))
-	for i in indices:
-		temp = traceArray[i:i+400]
-		temp = np.reshape(temp, (1,400))
-		traces = np.append(traces, temp, axis=0)
-	return traces
-
 def cutEncryptionBlocks(traceArray, indices, padding):
-	#print('Splitting array into blocks...')
-	blockSize = 4100+2*padding
+	"""
+	Returns array with all extracted encryption blocks from the recorded trace
+	array without any other modifications to the data. The blocks are padded
+	according to the argument 'padding'.
+	"""
+	blockSize = BLOCK_LENGTH+2*padding
 	blocks = np.empty((0,blockSize))
 	for i in indices:
 		temp = traceArray[i-padding:i-padding+blockSize]
+		if len(temp) < blockSize:
+			continue
 		temp = np.reshape(temp, (1,blockSize))
 		blocks = np.append(blocks, temp, axis=0)
 	return blocks
 
-def signOfTraces(trace, template, corr = None):
-	try:
-		if corr == None:
-			corr = getCorrelation(trace, template)
-	except ValueError:
-		pass
-	return np.mean(corr) < 0.49
-
 def getCorrelation(trace, template, norm=True):
+	"""
+	Returns cross correlation between recorded trace and template, as an array
+	with the same length as the trace.
+	"""
 	corr = signal.correlate(trace, template, mode='full', method='auto')
-	corr = corr[len(template):len(trace)]
+	corr = corr[len(template):len(trace)+len(template)]
 	if norm:
 		corr = normMaxMin(corr)
 	return corr
 
 def plotEnvelopeWithTrigger(traceArray, template, normalize=False):
+	"""
+	Used for visualizing the envelope array together with the resulting
+	trigger level for 3 different examples of trigger multiplier. This
+	is useful when choosing trigger multiplier.
+	"""
 	corr = getCorrelation(traceArray, template)
 	meanCorr = np.mean(corr)
 	std = np.std(corr)
@@ -171,126 +179,3 @@ def plotEnvelopeWithTrigger(traceArray, template, normalize=False):
 	plt.ylabel('Amplitude')
 	plt.legend(loc="upper right")
 	plt.show()
-
-def plotFrequencies(array):
-	N = len(array) # Number of samples
-	f_s = 5000000 # Sample frequency of Software defined radio
-	yf = fftpack.fft(array)
-	xf = fftpack.fftfreq(N) * f_s
-	fig, ax = plt.subplots()
-	ax.plot(xf, np.abs(yf))
-
-""" Old code: """
-"""
-def binDistribution(inputArray, bins, minLimit=None, maxLimit=None):
-	if maxLimit != None:
-		max = maxLimit
-	else:
-		max = np.max(inputArray)
-	if minLimit != None:
-		min = minLimit
-	else:
-		min = np.min(inputArray)
-	binSize = (max - min) / bins
-	binList = [0]*bins
-	for value in inputArray:
-		if value >= min and value <= max:
-			index = int((value-min)//binSize)
-			try:
-				binList[index] += 1
-			except IndexError:
-				print("IndexError, index: "+ str(index))
-	xAxis = []
-	for x in range(bins):
-		x = x * binSize
-		xAxis.append(x+min)
-	return (xAxis, binList)
-
-def plotFrequencies(array):
-	N = len(array) # Number of samples
-	f_s = 5000000 # Sample frequency of Software defined radio
-	yf = fftpack.fft(array)
-	xf = fftpack.fftfreq(N) * f_s
-	fig, ax = plt.subplots()
-	ax.plot(xf, np.abs(yf))
-
-def _butterBandpassFilter(array, lowcut, highcut, f_s, order=5):
-    nyq = 0.5 * f_s
-    low = lowcut / nyq
-    high = highcut / nyq
-    sos = signal.butter(order, [low, high], analog=False, btype='band', output='sos')
-    y = signal.sosfilt(sos, array)
-    return y
-
-def filterArray(array, distanceBetweenPeeks=4370):
-	#plotFrequencies(array)
-	f_s = 5000000
-	t_s = 1/f_s
-	f_enc = 1 / (distanceBetweenPeeks*t_s)
-	low = f_enc * 0.1
-	high = f_enc * 10
-	y = _butterBandpassFilter(array, low, high, f_s, 10)
-	#plotFrequencies(y)
-	return y
-
-def getTriggerLevel(trace, template, plotBins=False):
-	# Returns trigger level based on correlation amplitudes distributed into bins
-	print('Distributing correlation to bins...')
-	nrBins = 100
-	corr = getCorrelation(trace, template)
-	if not signOfTraces(None, None, corr):
-		return "No sign of traces"
-	amplitudes, q = binDistribution(corr, nrBins, 0.5)
-	if plotBins:
-		plt.figure(nrBins).canvas.set_window_title('Correlation bins')
-		plt.plot(amplitudes, q)
-
-	print("Calculating trigger level...")
-	max = amplitudes[nrBins-1]
-	margin = nrBins//50-1
-	for j in range(nrBins-1, -1, -1):
-		mean = np.mean(q[j:len(q)])
-		if q[j-1] - q[j] > 0 and q[j-2] - q[j-1] > 0 and q[j] > mean:
-			level = amplitudes[j+margin]
-			print("Trigger level: "+str(level))
-			return level
-	return max
-
-
-def makeTraces(corr, traceArray, triggerLevel, offset):
-	print("Splitting array into traces...")
-	traces = np.empty((0,400), float) #creating empty array
-	indexes = []
-	minDistance = 3
-	lastTraceIndex = -10
-	i = 0
-	while i < len(corr):
-		value = corr[i]
-		if value > triggerLevel and i - lastTraceIndex >= minDistance:
-			startIndex = i - offset
-			tempIndex = startIndex
-			for j in range(1, minDistance):
-				if corr[i+j] > value:
-					value = corr[i+j]
-					tempIndex = startIndex + j
-			temp = traceArray[tempIndex:tempIndex+400]
-			temp = np.reshape(temp, (1,400))
-			traces = np.append(traces, temp, axis=0)
-			lastTraceIndex = tempIndex + offset
-			indexes.append(lastTraceIndex)
-			i+=4000 # Skip samples of saved trace
-		else:
-			i+=1
-	return traces, indexes
-
-def getTracesFromArray(array, template, triggerLevel, plotCorr=False):
-	templ_length = len(template)
-	print('Correlating...')
-	corr = getCorrelation(array, template)
-
-	if(plotCorr):
-		plt.figure(0).canvas.set_window_title('Trace & Correlation')
-		plt.plot(range(len(array)), array, range(templ_length, len(array)), corr)
-	traces, indexes = makeTraces(corr, array, triggerLevel, 3548)
-	return traces, indexes
-"""
