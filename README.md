@@ -1,4 +1,11 @@
-# deep-learning-em-sca
+# Using Correlation Analysis to Locate Encryption Activity in Electromagnetic Side-Channels
 
-In this project we have different deep learning models to analyze EM-side
-channel traces to reconstruct the AES key.
+## Folders
+### capture
+This folder contains scripts for capturing data from a target device. 
+### correlation
+This folder contains the main toolset with scripts to crate templates, plot data
+and locate encryption in a trace.
+### gnuradio
+This folder contains flowdiagrams and scripts generated with GNURadio. They are
+used as a basis for the scripts in 'capture'.
