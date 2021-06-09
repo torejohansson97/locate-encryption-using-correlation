@@ -1,4 +1,6 @@
 import serial
+# Simon Weideskog and Tore Johansson
+# Last edited: 2021-06-09
 # TargetDevice defines a class that handles the communication with the target 
 # device via serial. The target device must be running the firmware supplied by
 # screaminchannels.
